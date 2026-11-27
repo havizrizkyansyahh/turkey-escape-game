@@ -1,0 +1,101 @@
+// The autumn palette every painter uses, so the farm, the barn, the kitchen and the porch read as
+// one world: warm oranges and reds, hay gold, barn red, and a dark brown ink for every outline.
+
+export const INK = '#2b1a12';
+
+export const PALETTE = {
+  ink: INK,
+  cream: '#fff3dc',
+  paper: '#f7e7c6',
+
+  // Tom Wattle
+  turkeyBody: '#7b4a2b',
+  turkeyShade: '#5a321c',
+  turkeyLight: '#a8703f',
+  tailDark: '#5b3520',
+  tailMid: '#b5652f',
+  tailBand: '#f0a43f',
+  tailTip: '#f7e2b8',
+  turkeyFace: '#a9cde3',
+  turkeyFaceShade: '#86b1cc',
+  snood: '#d8352a',
+  beak: '#f2b33d',
+  legs: '#e39b2f',
+  legsBack: '#c47f22',
+
+  // Farmer Bramble
+  overalls: '#3f6fa8',
+  overallsDark: '#2c5283',
+  flannel: '#b8382c',
+  skin: '#f2c49b',
+  skinShade: '#d99f78',
+  nose: '#e0876a',
+  beard: '#8a6a4e',
+  beardDark: '#6b4f38',
+  hat: '#e9c46a',
+  hatShade: '#c9a040',
+  hatBand: '#9c4a2a',
+  boots: '#4a2f1d',
+
+  // the farmyard
+  skyTop: '#f39a52',
+  skyMid: '#f8c27e',
+  skyLow: '#fde6bd',
+  sun: '#fff4cf',
+  hillFar: '#e7b47c',
+  hillNear: '#cf9257',
+  grass: '#8f9e3c',
+  grassDark: '#6f7c2b',
+  dirt: '#c08b55',
+  dirtDark: '#a3713f',
+  maple: '#c8432d',
+  amber: '#e8862f',
+  gold: '#f2c14e',
+  barnRed: '#a8322a',
+  barnRedDark: '#7c2119',
+  trim: '#f6ead2',
+  wood: '#8b5a33',
+  woodDark: '#5e3a20',
+  woodLight: '#b07a48',
+  hay: '#e5b84f',
+  hayDark: '#c18f2c',
+  hayLight: '#f6d77d',
+  pumpkin: '#e8772e',
+  pumpkinDark: '#b8541c',
+  pumpkinLight: '#f6a55a',
+  leaf: '#6e8b3d',
+  leafDark: '#4f6a2a',
+
+  // Grandma's kitchen
+  wallpaper: '#f3d9a4',
+  wallpaperStripe: '#ebc988',
+  wainscot: '#c98b5a',
+  cabinet: '#3f7b77',
+  cabinetDark: '#2c5856',
+  counter: '#efe5d1',
+  tileLight: '#f4e6c8',
+  tileDark: '#b0433a',
+  ovenIron: '#34302d',
+  ovenIronLight: '#55504b',
+  ovenChrome: '#c4bfba',
+  fireOuter: '#ff6d1a',
+  fireMid: '#ffad2e',
+  fireCore: '#fff2b0',
+  steel: '#d3d9de',
+  steelDark: '#8a949c',
+
+  // the front porch at dusk
+  duskTop: '#3b2b58',
+  duskMid: '#9a4f78',
+  duskLow: '#f29a63',
+  pine: '#3a3552',
+  pineFar: '#5a4a6e',
+
+  // interface
+  panel: 'rgba(43, 26, 18, 0.8)',
+  panelEdge: '#f2c14e',
+  uiGold: '#ffd166',
+  uiRed: '#ff5a4e',
+  uiGreen: '#86d65a',
+  uiText: '#fff6e5',
+};

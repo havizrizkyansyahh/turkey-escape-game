@@ -1,0 +1,8 @@
+# hand-in output and transcript bundles stay local
+out/
+*.tar.gz
+.screenshot-work/
+
+# editor and OS clutter
+.DS_Store
+node_modules/

@@ -1,0 +1,23 @@
+/* The page only frames the canvas: everything in the game is drawn on it. */
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #1d120c;
+}
+
+#stage {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#game {
+  display: block;
+  outline: none;
+  cursor: pointer;
+  touch-action: none;
+}
