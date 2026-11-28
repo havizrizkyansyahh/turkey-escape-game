@@ -11,6 +11,35 @@ import { drawParticles, drawPopups, drawSpeechBubble, drawFarmerAlert, drawSight
 import { groundShadow } from './art/brush.js';
 import { dangerLevel } from './run.js';
 
+export function drawRunScene(ctx, run) {
+  const camera = run.camera;
+  const cameraX = camera.x + camera.offsetX;
+  const time = run.time;
+  const farmer = run.farmer;
+  const farmerX = farmer.x - cameraX;
+  const farmerVisible = farmerX > -140 && farmerX < VIEW_WIDTH + 140;
+
+  ctx.save();
+  ctx.translate(0, camera.offsetY);
+  drawBackdrops(ctx, cameraX, time);
+  drawProps(ctx, run.course.entities, cameraX, 'back', time);
+  if (farmerVisible) drawFarmer(ctx, farmerX, farmer.y, farmerLook(farmer, run.turkey), time);
+  drawProps(ctx, run.course.entities, cameraX, 'floor', time);
+  drawTurkeySprite(ctx, run, cameraX, time);
+  drawProps(ctx, run.course.entities, cameraX, 'front', time);
+  if (farmerVisible) drawSearchCone(ctx, farmer, farmerX, run.stageIndex, time);
+  drawParticles(ctx, run.particles, cameraX);
+  if (farmerVisible) {
+    drawFarmerAlert(ctx, farmer, farmerX, time);
+    if (farmer.speech && farmer.speechLeft > 0) {
+      drawSpeechBubble(ctx, farmer.speech, farmerX + 22 * farmer.facing, GROUND_Y - 246, Math.min(1, farmer.speechLeft * 3));
+    }
+  }
+  drawPopups(ctx, run.popups, cameraX);
+  ctx.restore();
+  drawDangerVignette(ctx, dangerLevel(run), time);
+}
+
 function drawSpeedLines(ctx, x, y, time) {
   ctx.save();
   ctx.strokeStyle = 'rgba(255, 246, 229, 0.75)';
@@ -56,33 +85,4 @@ function drawSearchCone(ctx, farmer, farmerX, stageIndex, time) {
   const staring = farmer.state === 'pokeWindup' || farmer.lookingAtSpot;
   drawSightCone(ctx, farmerX + 14 * farmer.facing, GROUND_Y - 160, farmer.facing, staring, time);
   if (stageIndex === 1 || stageIndex === 3) drawLantern(ctx, farmerX - 22 * farmer.facing, GROUND_Y - 96, time);
-}
-
-export function drawRunScene(ctx, run) {
-  const camera = run.camera;
-  const cameraX = camera.x + camera.offsetX;
-  const time = run.time;
-  const farmer = run.farmer;
-  const farmerX = farmer.x - cameraX;
-  const farmerVisible = farmerX > -140 && farmerX < VIEW_WIDTH + 140;
-
-  ctx.save();
-  ctx.translate(0, camera.offsetY);
-  drawBackdrops(ctx, cameraX, time);
-  drawProps(ctx, run.course.entities, cameraX, 'back', time);
-  if (farmerVisible) drawFarmer(ctx, farmerX, farmer.y, farmerLook(farmer, run.turkey), time);
-  drawProps(ctx, run.course.entities, cameraX, 'floor', time);
-  drawTurkeySprite(ctx, run, cameraX, time);
-  drawProps(ctx, run.course.entities, cameraX, 'front', time);
-  if (farmerVisible) drawSearchCone(ctx, farmer, farmerX, run.stageIndex, time);
-  drawParticles(ctx, run.particles, cameraX);
-  if (farmerVisible) {
-    drawFarmerAlert(ctx, farmer, farmerX, time);
-    if (farmer.speech && farmer.speechLeft > 0) {
-      drawSpeechBubble(ctx, farmer.speech, farmerX + 22 * farmer.facing, GROUND_Y - 246, Math.min(1, farmer.speechLeft * 3));
-    }
-  }
-  drawPopups(ctx, run.popups, cameraX);
-  ctx.restore();
-  drawDangerVignette(ctx, dangerLevel(run), time);
 }

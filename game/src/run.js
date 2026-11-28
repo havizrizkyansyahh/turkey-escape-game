@@ -16,42 +16,6 @@ import { createCombo, chainCloseCall, coolCombo } from './scoring.js';
 import { spawnBurst, spawnPopup, updateEffects } from './particles.js';
 import { createCamera, followTurkey, shakeCamera } from './camera.js';
 
-const FEATHER_COLORS = ['#7b4a2b', '#b5652f', '#e89a3c', '#f7e2b8', '#5b3520'];
-const HAY_COLORS = ['#e5b84f', '#f6d77d', '#c18f2c'];
-const PUMPKIN_COLORS = ['#e8772e', '#b8541c', '#f2a65a', '#6e8b3d'];
-const MUD_COLORS = ['#6b4423', '#4f311a', '#8a5a33'];
-const SPARK_COLORS = ['#fff3b0', '#ffd166', '#ffffff'];
-const LEAF_COLORS = ['#c8432d', '#e8862f', '#f2c14e', '#a33b20'];
-
-const HURT_WORDS = {
-  pitchforks: 'OW! POINTY!',
-  oven: 'HOT HOT HOT!',
-  pot: 'SCALDED!',
-  rollingPin: 'WHAM!',
-  knife: 'YIKES!',
-};
-
-// The first time each kind of obstacle comes up, a floating hint says how to beat it.
-const HINTS = {
-  haybale: 'SPACE or CLICK to jump!',
-  fence: 'Hold SPACE to jump higher',
-  mud: 'Mud slows you: jump it!',
-  pumpkin: 'SHIFT gobble-dash smashes pumpkins!',
-  chicken: 'Watch the chickens!',
-  haystack: 'Press E to hide in the haystack!',
-  beam: 'Hold DOWN or S to duck!',
-  baleStack: 'Too tall? Tap SPACE again mid-air to flutter!',
-  pitchforks: 'Pitchforks hurt! Jump them!',
-  barrel: 'Press E to hide in the barrel',
-  lantern: 'Duck the swinging lantern',
-  oven: 'Oven blast! Pass it shut, or flutter over',
-  pot: 'Jump the pot between boil-overs',
-  rollingPin: 'Rolling pin! Jump it!',
-  table: 'Duck under the tablecloth!',
-  pantry: 'Press E to hide in the pantry',
-  rockingChair: 'Hop the rocking chairs!',
-};
-
 export function createRun(seed) {
   const turkey = createTurkey(T.startX);
   turkey.vx = STAGES[0].runSpeed;
@@ -88,6 +52,67 @@ export function createRun(seed) {
   run.award = (points, label, x, y, color, size) => addScore(run, points, label, x, y, color, size);
   extendCourse(run.course, run.camera.x + VIEW_WIDTH + 900);
   return run;
+}
+
+export function updateRun(run, controls, dt) {
+  run.events = [];
+  run.time += dt;
+  const stage = STAGES[run.stageIndex];
+  const turkey = run.turkey;
+
+  if (!run.outcome) handleHiding(run, controls, stage);
+  updateTurkey(turkey, controls, stage, dt, run.events);
+  for (const event of run.events) if (event.type === 'dash') run.stats.dashes += 1;
+  updateAmbush(run, dt);
+  updateFarmer(run.farmer, run, stage, dt);
+  for (const entity of run.course.entities) updateEntity(entity, dt, run);
+  if (!run.outcome && !turkey.hiddenIn) resolveContacts(run);
+
+  scoreDistance(run);
+  advanceStage(run);
+  if (!run.outcome && turkey.x >= ROUTE_END_X) escapeRun(run);
+
+  extendCourse(run.course, run.camera.x + VIEW_WIDTH + 900);
+  pruneCourse(run.course, run.camera.x - 700);
+  trailEffects(run, dt);
+  coolCombo(run.combo, dt);
+  updateEffects(run.particles, run.popups, dt);
+  followTurkey(run.camera, turkey.x, dt, run.effectsRandom);
+  run.stageBannerLeft = Math.max(0, run.stageBannerLeft - dt);
+  showHints(run);
+
+  if (run.outcome) {
+    run.endDelay -= dt;
+    if (run.endDelay <= 0) run.finished = true;
+  }
+}
+
+export function runSummary(run) {
+  const summary = {
+    outcome: run.outcome ?? 'caught',
+    reason: run.outcomeReason,
+    score: Math.floor(run.score),
+    meters: Math.floor(Math.min(run.farthestX, ROUTE_END_X) / PIXELS_PER_METER),
+    stageIndex: run.stageIndex,
+    stageTitle: STAGES[run.stageIndex].title,
+    livesLeft: run.turkey.lives,
+    seconds: Math.floor(run.time),
+    ...run.stats,
+  };
+  summary.rank = rankTitle(summary);
+  return summary;
+}
+
+export function rankTitle(summary) {
+  if (summary.outcome === 'escaped') {
+    if (summary.hits === 0) return 'Untouchable Tom';
+    if (summary.livesLeft >= 2) return 'Barnyard Legend';
+    return 'Free Bird';
+  }
+  if (summary.meters >= 1380) return 'So Close, Tom!';
+  if (summary.meters >= 780) return 'Kitchen Fugitive';
+  if (summary.meters >= 380) return 'Barn Runner';
+  return 'Leftovers';
 }
 
 function addScore(run, points, label, x, y, color = '#ffd166', size = 22) {
@@ -376,8 +401,6 @@ function resolveContacts(run) {
 
 // ---------------------------------------------------------------- the farmer's moves
 
-const HARMLESS_KINDS = new Set(['corn', 'goldenCorn', 'featherPickup', 'haystack', 'barrel', 'pantry', 'gate', 'finishGate']);
-
 // Fairness: a knife only flies when Tom will not be busy with another obstacle as it arrives.
 function knifeLaneClear(run, gap) {
   const turkey = run.turkey;
@@ -527,63 +550,45 @@ function trailEffects(run, dt) {
   }
 }
 
-export function updateRun(run, controls, dt) {
-  run.events = [];
-  run.time += dt;
-  const stage = STAGES[run.stageIndex];
-  const turkey = run.turkey;
+const FEATHER_COLORS = ['#7b4a2b', '#b5652f', '#e89a3c', '#f7e2b8', '#5b3520'];
 
-  if (!run.outcome) handleHiding(run, controls, stage);
-  updateTurkey(turkey, controls, stage, dt, run.events);
-  for (const event of run.events) if (event.type === 'dash') run.stats.dashes += 1;
-  updateAmbush(run, dt);
-  updateFarmer(run.farmer, run, stage, dt);
-  for (const entity of run.course.entities) updateEntity(entity, dt, run);
-  if (!run.outcome && !turkey.hiddenIn) resolveContacts(run);
+const HAY_COLORS = ['#e5b84f', '#f6d77d', '#c18f2c'];
 
-  scoreDistance(run);
-  advanceStage(run);
-  if (!run.outcome && turkey.x >= ROUTE_END_X) escapeRun(run);
+const PUMPKIN_COLORS = ['#e8772e', '#b8541c', '#f2a65a', '#6e8b3d'];
 
-  extendCourse(run.course, run.camera.x + VIEW_WIDTH + 900);
-  pruneCourse(run.course, run.camera.x - 700);
-  trailEffects(run, dt);
-  coolCombo(run.combo, dt);
-  updateEffects(run.particles, run.popups, dt);
-  followTurkey(run.camera, turkey.x, dt, run.effectsRandom);
-  run.stageBannerLeft = Math.max(0, run.stageBannerLeft - dt);
-  showHints(run);
+const MUD_COLORS = ['#6b4423', '#4f311a', '#8a5a33'];
 
-  if (run.outcome) {
-    run.endDelay -= dt;
-    if (run.endDelay <= 0) run.finished = true;
-  }
-}
+const SPARK_COLORS = ['#fff3b0', '#ffd166', '#ffffff'];
 
-export function rankTitle(summary) {
-  if (summary.outcome === 'escaped') {
-    if (summary.hits === 0) return 'Untouchable Tom';
-    if (summary.livesLeft >= 2) return 'Barnyard Legend';
-    return 'Free Bird';
-  }
-  if (summary.meters >= 1380) return 'So Close, Tom!';
-  if (summary.meters >= 780) return 'Kitchen Fugitive';
-  if (summary.meters >= 380) return 'Barn Runner';
-  return 'Leftovers';
-}
+const LEAF_COLORS = ['#c8432d', '#e8862f', '#f2c14e', '#a33b20'];
 
-export function runSummary(run) {
-  const summary = {
-    outcome: run.outcome ?? 'caught',
-    reason: run.outcomeReason,
-    score: Math.floor(run.score),
-    meters: Math.floor(Math.min(run.farthestX, ROUTE_END_X) / PIXELS_PER_METER),
-    stageIndex: run.stageIndex,
-    stageTitle: STAGES[run.stageIndex].title,
-    livesLeft: run.turkey.lives,
-    seconds: Math.floor(run.time),
-    ...run.stats,
-  };
-  summary.rank = rankTitle(summary);
-  return summary;
-}
+const HURT_WORDS = {
+  pitchforks: 'OW! POINTY!',
+  oven: 'HOT HOT HOT!',
+  pot: 'SCALDED!',
+  rollingPin: 'WHAM!',
+  knife: 'YIKES!',
+};
+
+// The first time each kind of obstacle comes up, a floating hint says how to beat it.
+const HINTS = {
+  haybale: 'SPACE or CLICK to jump!',
+  fence: 'Hold SPACE to jump higher',
+  mud: 'Mud slows you: jump it!',
+  pumpkin: 'SHIFT gobble-dash smashes pumpkins!',
+  chicken: 'Watch the chickens!',
+  haystack: 'Press E to hide in the haystack!',
+  beam: 'Hold DOWN or S to duck!',
+  baleStack: 'Too tall? Tap SPACE again mid-air to flutter!',
+  pitchforks: 'Pitchforks hurt! Jump them!',
+  barrel: 'Press E to hide in the barrel',
+  lantern: 'Duck the swinging lantern',
+  oven: 'Oven blast! Pass it shut, or flutter over',
+  pot: 'Jump the pot between boil-overs',
+  rollingPin: 'Rolling pin! Jump it!',
+  table: 'Duck under the tablecloth!',
+  pantry: 'Press E to hide in the pantry',
+  rockingChair: 'Hop the rocking chairs!',
+};
+
+const HARMLESS_KINDS = new Set(['corn', 'goldenCorn', 'featherPickup', 'haystack', 'barrel', 'pantry', 'gate', 'finishGate']);

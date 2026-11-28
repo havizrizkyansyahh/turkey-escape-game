@@ -3,23 +3,6 @@
 
 import { VIEW_WIDTH, VIEW_HEIGHT } from './config.js';
 
-const ACTION_KEYS = {
-  jump: ['Space', 'ArrowUp', 'KeyW'],
-  duck: ['ArrowDown', 'KeyS'],
-  left: ['ArrowLeft', 'KeyA'],
-  right: ['ArrowRight', 'KeyD'],
-  dash: ['ShiftLeft', 'ShiftRight', 'KeyJ'],
-  hide: ['KeyE', 'KeyF'],
-  pause: ['KeyP', 'Escape'],
-  confirm: ['Enter', 'NumpadEnter', 'Space'],
-  mute: ['KeyM'],
-  help: ['KeyH'],
-  restart: ['KeyR'],
-  back: ['Escape', 'Backspace'],
-};
-
-const KEYS_WITH_BROWSER_DEFAULTS = new Set(['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Backspace']);
-
 export function createInput(canvas, audio) {
   const held = new Set();
   const pressed = new Set();
@@ -88,3 +71,20 @@ export function createInput(canvas, audio) {
     },
   };
 }
+
+const ACTION_KEYS = {
+  jump: ['Space', 'ArrowUp', 'KeyW'],
+  duck: ['ArrowDown', 'KeyS'],
+  left: ['ArrowLeft', 'KeyA'],
+  right: ['ArrowRight', 'KeyD'],
+  dash: ['ShiftLeft', 'ShiftRight', 'KeyJ'],
+  hide: ['KeyE', 'KeyF'],
+  pause: ['KeyP', 'Escape'],
+  confirm: ['Enter', 'NumpadEnter', 'Space'],
+  mute: ['KeyM'],
+  help: ['KeyH'],
+  restart: ['KeyR'],
+  back: ['Escape', 'Backspace'],
+};
+
+const KEYS_WITH_BROWSER_DEFAULTS = new Set(['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Backspace']);

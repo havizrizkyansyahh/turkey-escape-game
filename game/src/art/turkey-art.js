@@ -5,8 +5,31 @@
 import { PALETTE as P, INK } from './palette.js';
 import { ellipsePath, fillAndOutline, limb } from './brush.js';
 
-const TAIL_ANGLES = [0.96, 1.07, 1.18, 1.29, 1.4, 1.51, 1.62]; // × π: from behind him to straight up
-const TAIL_SPREAD = { run: 0.85, jump: 1, flutter: 1.15, dash: 0.7, duck: 0.62, stumble: 0.95, hurt: 1.15, dazed: 0.7, proud: 1.25, scared: 1.2, idle: 0.95 };
+export function drawTurkey(ctx, x, y, look, time = 0) {
+  const { pose, scale = 1 } = look;
+  const layout = layoutFor(pose);
+  ctx.save();
+  ctx.translate(x, y);
+  if (look.flash) ctx.globalAlpha *= 0.45;
+  ctx.scale(scale, scale);
+  if (look.squash > 0) ctx.scale(1 + look.squash * 0.7, 1 - look.squash * 0.7);
+  let lean = 0;
+  if (pose === 'dash') lean = -0.2;
+  else if (pose === 'run') lean = -0.05;
+  else if (pose === 'stumble') lean = 0.22 + Math.sin((look.phase ?? 0) * 3) * 0.08;
+  else if (pose === 'hurt') lean = 0.18;
+  const bob = pose === 'run' || pose === 'dash' ? -Math.abs(Math.sin(look.phase ?? 0)) * 4 : 0;
+  ctx.translate(0, bob);
+  ctx.rotate(lean);
+  drawTailFan(ctx, layout, TAIL_SPREAD[pose] ?? 0.9);
+  drawLeg(ctx, layout, look, true);
+  drawBody(ctx, layout);
+  drawLeg(ctx, layout, look, false);
+  drawWing(ctx, layout, look);
+  drawHead(ctx, layout, look);
+  if (pose === 'dazed') drawDazedStars(ctx, layout, time);
+  ctx.restore();
+}
 
 export function turkeyLook(turkey, time) {
   let pose = 'run';
@@ -247,32 +270,6 @@ function drawDazedStars(ctx, layout, time) {
   }
 }
 
-export function drawTurkey(ctx, x, y, look, time = 0) {
-  const { pose, scale = 1 } = look;
-  const layout = layoutFor(pose);
-  ctx.save();
-  ctx.translate(x, y);
-  if (look.flash) ctx.globalAlpha *= 0.45;
-  ctx.scale(scale, scale);
-  if (look.squash > 0) ctx.scale(1 + look.squash * 0.7, 1 - look.squash * 0.7);
-  let lean = 0;
-  if (pose === 'dash') lean = -0.2;
-  else if (pose === 'run') lean = -0.05;
-  else if (pose === 'stumble') lean = 0.22 + Math.sin((look.phase ?? 0) * 3) * 0.08;
-  else if (pose === 'hurt') lean = 0.18;
-  const bob = pose === 'run' || pose === 'dash' ? -Math.abs(Math.sin(look.phase ?? 0)) * 4 : 0;
-  ctx.translate(0, bob);
-  ctx.rotate(lean);
-  drawTailFan(ctx, layout, TAIL_SPREAD[pose] ?? 0.9);
-  drawLeg(ctx, layout, look, true);
-  drawBody(ctx, layout);
-  drawLeg(ctx, layout, look, false);
-  drawWing(ctx, layout, look);
-  drawHead(ctx, layout, look);
-  if (pose === 'dazed') drawDazedStars(ctx, layout, time);
-  ctx.restore();
-}
-
 // Two wide eyes peeking out of a hiding spot.
 export function drawPeekingEyes(ctx, x, y, lookLeft, time) {
   const blink = time % 2.7 < 0.12;
@@ -286,3 +283,7 @@ export function drawPeekingEyes(ctx, x, y, lookLeft, time) {
     }
   }
 }
+
+const TAIL_ANGLES = [0.96, 1.07, 1.18, 1.29, 1.4, 1.51, 1.62]; // × π: from behind him to straight up
+
+const TAIL_SPREAD = { run: 0.85, jump: 1, flutter: 1.15, dash: 0.7, duck: 0.62, stumble: 0.95, hurt: 1.15, dazed: 0.7, proud: 1.25, scared: 1.2, idle: 0.95 };

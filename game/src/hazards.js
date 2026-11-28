@@ -4,25 +4,6 @@
 import { GROUND_Y } from './config.js';
 import { hitbox } from './collisions.js';
 
-const NONE = [];
-
-export const HIDING_SPOTS = new Set(['haystack', 'barrel', 'pantry']);
-export const SMASHABLE = new Set(['haybale', 'pumpkin']);
-
-export const OVEN_TIMING = { warn: 0.9, blast: 1.0, flameInset: 24 };
-export const POT_TIMING = { rattle: 0.7, geyser: 0.85 };
-
-export function lanternPosition(lantern) {
-  const angle = Math.sin(lantern.swing * 2.1 + lantern.phaseOffset) * 0.85;
-  const pivotX = lantern.x + lantern.w / 2;
-  const pivotY = GROUND_Y - 300;
-  return { x: pivotX + Math.sin(angle) * lantern.rope, y: pivotY + Math.cos(angle) * lantern.rope, angle, pivotX, pivotY };
-}
-
-function floorBox(effect, entity, inset) {
-  return hitbox(effect, entity.x + inset, GROUND_Y - entity.h + inset, entity.w - inset * 2, entity.h - inset);
-}
-
 export function hitboxesOf(entity) {
   if (entity.gone) return NONE;
   switch (entity.kind) {
@@ -72,6 +53,53 @@ export function hitboxesOf(entity) {
     default:
       return NONE;
   }
+}
+
+export function updateEntity(entity, dt, run) {
+  switch (entity.kind) {
+    case 'oven':
+      cycleOven(entity, dt, run);
+      break;
+    case 'pot':
+      cyclePot(entity, dt, run);
+      break;
+    case 'rollingPin':
+      rollPin(entity, dt, run);
+      break;
+    case 'knife':
+      flyKnife(entity, dt, run);
+      break;
+    case 'chicken':
+      wanderChicken(entity, dt);
+      break;
+    case 'lantern':
+      entity.swing += dt;
+      break;
+    case 'rockingChair':
+      entity.rock += dt;
+      break;
+    default:
+      break;
+  }
+}
+
+export const HIDING_SPOTS = new Set(['haystack', 'barrel', 'pantry']);
+
+export const SMASHABLE = new Set(['haybale', 'pumpkin']);
+
+export const OVEN_TIMING = { warn: 0.9, blast: 1.0, flameInset: 24 };
+
+export const POT_TIMING = { rattle: 0.7, geyser: 0.85 };
+
+export function lanternPosition(lantern) {
+  const angle = Math.sin(lantern.swing * 2.1 + lantern.phaseOffset) * 0.85;
+  const pivotX = lantern.x + lantern.w / 2;
+  const pivotY = GROUND_Y - 300;
+  return { x: pivotX + Math.sin(angle) * lantern.rope, y: pivotY + Math.cos(angle) * lantern.rope, angle, pivotX, pivotY };
+}
+
+function floorBox(effect, entity, inset) {
+  return hitbox(effect, entity.x + inset, GROUND_Y - entity.h + inset, entity.w - inset * 2, entity.h - inset);
 }
 
 function isNearTurkey(entity, run) {
@@ -137,30 +165,4 @@ function wanderChicken(chicken, dt) {
   chicken.x += Math.sin(chicken.wander * 0.9) * 28 * dt;
 }
 
-export function updateEntity(entity, dt, run) {
-  switch (entity.kind) {
-    case 'oven':
-      cycleOven(entity, dt, run);
-      break;
-    case 'pot':
-      cyclePot(entity, dt, run);
-      break;
-    case 'rollingPin':
-      rollPin(entity, dt, run);
-      break;
-    case 'knife':
-      flyKnife(entity, dt, run);
-      break;
-    case 'chicken':
-      wanderChicken(entity, dt);
-      break;
-    case 'lantern':
-      entity.swing += dt;
-      break;
-    case 'rockingChair':
-      entity.rock += dt;
-      break;
-    default:
-      break;
-  }
-}
+const NONE = [];

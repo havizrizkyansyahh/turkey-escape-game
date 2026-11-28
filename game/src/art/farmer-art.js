@@ -7,30 +7,40 @@ import { PALETTE as P, INK } from './palette.js';
 import { ellipsePath, roundRectPath, fillAndOutline, limb, groundShadow } from './brush.js';
 import { drawTurkey } from './turkey-art.js';
 
-const SHOULDER_FRONT = [17, -128];
-const SHOULDER_BACK = [-16, -128];
+export function drawFarmer(ctx, x, y, look, time = 0) {
+  const scale = look.scale ?? 1;
+  ctx.save();
+  ctx.translate(x, y);
+  groundShadow(ctx, 0, 0, 46 * scale);
+  ctx.scale(look.facing * scale, scale);
+  const arms = armsFor(look);
 
-const ARMS_BY_STATE = {
-  chase: 'reach',
-  approach: 'reach',
-  recover: 'reach',
-  windup: 'raise',
-  lunge: 'lunge',
-  aim: 'throw',
-  search: 'shade',
-  pokeWindup: 'pokeReady',
-  poke: 'poke',
-  confused: 'scratch',
-  celebrate: 'holdUp',
-  defeated: 'fist',
-  shortcut: 'reach',
-  stunned: 'scratch',
-  tumble: 'scratch',
-};
+  drawLegs(ctx, look);
+  ctx.save();
+  ctx.translate(0, -74);
+  ctx.rotate(look.lean);
+  ctx.translate(0, 74);
 
-// In an ambush his arms telegraph the grab: high and wide (duck under) or low to scoop (jump over).
-function ambushArms(farmer) {
-  return farmer.ambushHigh ? 'block' : 'scoop';
+  limb(ctx, arms.back, 11, P.flannel, 3);
+  drawHand(ctx, arms.back[2], arms.hand === 'flat' ? 'fist' : arms.hand);
+  if (arms.backTool === 'fork') drawCarvingFork(ctx, arms.back[2]);
+  if (arms.backTool === 'knife') drawCarvingKnife(ctx, arms.back[2]);
+
+  drawTorso(ctx);
+  drawHead(ctx, look);
+
+  limb(ctx, arms.front, 11, P.flannel, 3);
+  drawHand(ctx, arms.front[2], arms.hand);
+  if (arms.pitchfork !== undefined) drawPitchfork(ctx, arms.pitchfork);
+  if (look.holdingTurkey) {
+    ctx.save();
+    ctx.translate(arms.front[2][0], arms.front[2][1] + 4);
+    ctx.rotate(Math.PI + Math.sin(time * 6) * 0.12);
+    drawTurkey(ctx, 0, 0, { pose: 'scared', flap: time * 14, phase: 0, scale: 0.95 }, time);
+    ctx.restore();
+  }
+  ctx.restore();
+  ctx.restore();
 }
 
 export function farmerLook(farmer, turkey) {
@@ -56,6 +66,11 @@ export function farmerLook(farmer, turkey) {
     holdingTurkey: farmer.state === 'celebrate' && turkey.caught,
     scale: 1,
   };
+}
+
+// In an ambush his arms telegraph the grab: high and wide (duck under) or low to scoop (jump over).
+function ambushArms(farmer) {
+  return farmer.ambushHigh ? 'block' : 'scoop';
 }
 
 function armsFor(look) {
@@ -292,38 +307,24 @@ function drawHead(ctx, look) {
   }
 }
 
-export function drawFarmer(ctx, x, y, look, time = 0) {
-  const scale = look.scale ?? 1;
-  ctx.save();
-  ctx.translate(x, y);
-  groundShadow(ctx, 0, 0, 46 * scale);
-  ctx.scale(look.facing * scale, scale);
-  const arms = armsFor(look);
+const SHOULDER_FRONT = [17, -128];
 
-  drawLegs(ctx, look);
-  ctx.save();
-  ctx.translate(0, -74);
-  ctx.rotate(look.lean);
-  ctx.translate(0, 74);
+const SHOULDER_BACK = [-16, -128];
 
-  limb(ctx, arms.back, 11, P.flannel, 3);
-  drawHand(ctx, arms.back[2], arms.hand === 'flat' ? 'fist' : arms.hand);
-  if (arms.backTool === 'fork') drawCarvingFork(ctx, arms.back[2]);
-  if (arms.backTool === 'knife') drawCarvingKnife(ctx, arms.back[2]);
-
-  drawTorso(ctx);
-  drawHead(ctx, look);
-
-  limb(ctx, arms.front, 11, P.flannel, 3);
-  drawHand(ctx, arms.front[2], arms.hand);
-  if (arms.pitchfork !== undefined) drawPitchfork(ctx, arms.pitchfork);
-  if (look.holdingTurkey) {
-    ctx.save();
-    ctx.translate(arms.front[2][0], arms.front[2][1] + 4);
-    ctx.rotate(Math.PI + Math.sin(time * 6) * 0.12);
-    drawTurkey(ctx, 0, 0, { pose: 'scared', flap: time * 14, phase: 0, scale: 0.95 }, time);
-    ctx.restore();
-  }
-  ctx.restore();
-  ctx.restore();
-}
+const ARMS_BY_STATE = {
+  chase: 'reach',
+  approach: 'reach',
+  recover: 'reach',
+  windup: 'raise',
+  lunge: 'lunge',
+  aim: 'throw',
+  search: 'shade',
+  pokeWindup: 'pokeReady',
+  poke: 'poke',
+  confused: 'scratch',
+  celebrate: 'holdUp',
+  defeated: 'fist',
+  shortcut: 'reach',
+  stunned: 'scratch',
+  tumble: 'scratch',
+};

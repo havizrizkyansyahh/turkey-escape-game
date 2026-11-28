@@ -3,36 +3,6 @@
 // asleep until the player acts. The music is a bouncy barn-dance loop that climbs in key and tempo
 // stage by stage, and picks up a nervous hi-hat when the farmer closes in.
 
-const MUTE_KEY = 'not-on-the-menu.muted.v1';
-const NOTE_INDEX = { C: 0, 'C#': 1, D: 2, 'D#': 3, E: 4, F: 5, 'F#': 6, G: 7, 'G#': 8, A: 9, 'A#': 10, B: 11 };
-
-// One entry per sixteenth note: a C major pentatonic hoedown.
-const MELODY = [
-  'E5', null, 'G5', 'A5', null, 'G5', 'E5', null, 'D5', null, 'E5', 'G5', null, 'A5', 'C6', null,
-  'A5', null, 'G5', 'E5', null, 'D5', 'C5', null, 'D5', null, 'E5', null, 'G5', 'E5', 'D5', null,
-];
-const BASS = [
-  'C3', null, null, null, 'G2', null, null, null, 'A2', null, null, null, 'G2', null, null, null,
-  'F2', null, null, null, 'C3', null, null, null, 'G2', null, null, null, 'G2', null, 'B2', null,
-];
-const STAGE_TEMPO = [124, 132, 140, 150];
-const STAGE_TRANSPOSE = [0, 2, 3, 5];
-
-export function noteFrequency(name, transpose = 0) {
-  const match = /^([A-G]#?)(\d)$/.exec(name);
-  if (!match) return 440;
-  const midi = NOTE_INDEX[match[1]] + (Number(match[2]) + 1) * 12 + transpose;
-  return 440 * 2 ** ((midi - 69) / 12);
-}
-
-function readMuted() {
-  try {
-    return localStorage.getItem(MUTE_KEY) === '1';
-  } catch {
-    return false;
-  }
-}
-
 export function createAudio() {
   let context = null;
   let master = null;
@@ -295,3 +265,37 @@ export function createAudio() {
     },
   };
 }
+
+export function noteFrequency(name, transpose = 0) {
+  const match = /^([A-G]#?)(\d)$/.exec(name);
+  if (!match) return 440;
+  const midi = NOTE_INDEX[match[1]] + (Number(match[2]) + 1) * 12 + transpose;
+  return 440 * 2 ** ((midi - 69) / 12);
+}
+
+function readMuted() {
+  try {
+    return localStorage.getItem(MUTE_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+const MUTE_KEY = 'not-on-the-menu.muted.v1';
+
+const NOTE_INDEX = { C: 0, 'C#': 1, D: 2, 'D#': 3, E: 4, F: 5, 'F#': 6, G: 7, 'G#': 8, A: 9, 'A#': 10, B: 11 };
+
+// One entry per sixteenth note: a C major pentatonic hoedown.
+const MELODY = [
+  'E5', null, 'G5', 'A5', null, 'G5', 'E5', null, 'D5', null, 'E5', 'G5', null, 'A5', 'C6', null,
+  'A5', null, 'G5', 'E5', null, 'D5', 'C5', null, 'D5', null, 'E5', null, 'G5', 'E5', 'D5', null,
+];
+
+const BASS = [
+  'C3', null, null, null, 'G2', null, null, null, 'A2', null, null, null, 'G2', null, null, null,
+  'F2', null, null, null, 'C3', null, null, null, 'G2', null, null, null, 'G2', null, 'B2', null,
+];
+
+const STAGE_TEMPO = [124, 132, 140, 150];
+
+const STAGE_TRANSPOSE = [0, 2, 3, 5];

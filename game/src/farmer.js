@@ -8,12 +8,6 @@ import { clamp } from './numbers.js';
 import { turkeyBox } from './turkey.js';
 import { isAmbushState, updateAmbushFarmer } from './ambush.js';
 
-const GRAB_LINES = ['GOTCHA!', "C'mere, drumstick!", 'Dinner time!', 'Hold STILL!'];
-const CHASE_LINES = ['Get back here!', "You're the main course!", 'Grandma wants you basted!', 'Nobody skips Thanksgiving!'];
-const SEARCH_LINES = ['Here, birdy birdy...', "I know you're in there...", 'Come on out, Tom...'];
-const CONFUSED_LINES = ["Huh?! Where'd he go?", 'Was that... feathers?', 'Durn bird!'];
-const KNIFE_LINES = ['Catch, drumstick!', 'Hold still for the carving!', 'Hyaah!'];
-
 export function createFarmer(x) {
   return {
     x,
@@ -32,6 +26,93 @@ export function createFarmer(x) {
     speechLeft: 0,
     chatterCooldown: 5,
   };
+}
+
+export function updateFarmer(farmer, run, stage, dt) {
+  const turkey = run.turkey;
+  const gap = turkey.x - farmer.x;
+  const speed = farmerChaseSpeed(farmer, turkey, stage);
+  farmer.timer -= dt;
+  farmer.speechLeft = Math.max(0, farmer.speechLeft - dt);
+
+  switch (farmer.state) {
+    case 'chase':
+      chase(farmer, run, stage, speed, gap, dt);
+      break;
+    case 'windup':
+      farmer.vx = speed * 0.55;
+      if (farmer.timer <= 0) enter(farmer, 'lunge', F.lungeSeconds);
+      break;
+    case 'lunge': {
+      farmer.vx = F.lungeSpeed;
+      const grabbable = !turkey.hiddenIn && turkey.invulnerable <= 0 && !turkey.caught;
+      if (grabbable && boxesOverlap(farmerGrabBox(farmer), turkeyBox(turkey))) {
+        run.onTurkeyCaught('grabbed');
+        break;
+      }
+      if (farmer.timer <= 0 || gap < 30) {
+        enter(farmer, 'recover', F.recoverSeconds);
+        run.events.push({ type: 'farmerMissed' });
+      }
+      break;
+    }
+    case 'recover':
+      farmer.vx = speed * 0.45;
+      if (farmer.timer <= 0) enter(farmer, 'chase');
+      break;
+    case 'aim':
+      farmer.vx = speed * 0.85;
+      if (farmer.timer <= 0) {
+        run.spawnKnife(farmer.x + 40, farmer.aimHigh);
+        farmer.throwCooldown = run.random.range(stage.throwEvery[0], stage.throwEvery[1]);
+        enter(farmer, 'chase');
+      }
+      break;
+    case 'approach':
+      approachSpot(farmer, run, stage, speed, dt);
+      break;
+    case 'search':
+      searchSpot(farmer, run, stage);
+      break;
+    case 'pokeWindup':
+      farmer.vx = 0;
+      farmer.facing = 1;
+      if (farmer.timer <= 0) {
+        enter(farmer, 'poke', F.pokeSeconds);
+        run.onSpotPoked(farmer.searchSpot);
+      }
+      break;
+    case 'poke':
+      farmer.vx = 0;
+      if (farmer.timer <= 0) enter(farmer, 'chase');
+      break;
+    case 'confused':
+      farmer.vx = 0;
+      farmer.facing = -1;
+      if (farmer.timer <= 0) {
+        enter(farmer, 'chase');
+        sayLine(farmer, 'Hey! Get back here!', 1.4);
+      }
+      break;
+    case 'celebrate':
+      farmer.vx = 0;
+      farmer.facing = 1;
+      break;
+    case 'defeated':
+      farmer.vx = Math.max(0, farmer.vx - 700 * dt);
+      farmer.facing = 1;
+      break;
+    default:
+      if (isAmbushState(farmer.state)) updateAmbushFarmer(farmer, run, stage, dt);
+      else enter(farmer, 'chase');
+  }
+
+  // He may close in, but never runs through Tom while chasing.
+  const chasing = farmer.state === 'chase' || farmer.state === 'windup' || farmer.state === 'recover' || farmer.state === 'aim';
+  if (chasing && gap < 70 && !turkey.knockedOut) farmer.vx = Math.min(farmer.vx, Math.max(0, turkey.vx - 10));
+
+  farmer.x += farmer.vx * dt;
+  farmer.runPhase += dt * (2 + Math.abs(farmer.vx) / 38);
 }
 
 export function farmerGrabBox(farmer) {
@@ -147,93 +228,6 @@ function searchSpot(farmer, run, stage) {
   farmer.facing = farmer.lookingAtSpot ? 1 : -1;
 }
 
-export function updateFarmer(farmer, run, stage, dt) {
-  const turkey = run.turkey;
-  const gap = turkey.x - farmer.x;
-  const speed = farmerChaseSpeed(farmer, turkey, stage);
-  farmer.timer -= dt;
-  farmer.speechLeft = Math.max(0, farmer.speechLeft - dt);
-
-  switch (farmer.state) {
-    case 'chase':
-      chase(farmer, run, stage, speed, gap, dt);
-      break;
-    case 'windup':
-      farmer.vx = speed * 0.55;
-      if (farmer.timer <= 0) enter(farmer, 'lunge', F.lungeSeconds);
-      break;
-    case 'lunge': {
-      farmer.vx = F.lungeSpeed;
-      const grabbable = !turkey.hiddenIn && turkey.invulnerable <= 0 && !turkey.caught;
-      if (grabbable && boxesOverlap(farmerGrabBox(farmer), turkeyBox(turkey))) {
-        run.onTurkeyCaught('grabbed');
-        break;
-      }
-      if (farmer.timer <= 0 || gap < 30) {
-        enter(farmer, 'recover', F.recoverSeconds);
-        run.events.push({ type: 'farmerMissed' });
-      }
-      break;
-    }
-    case 'recover':
-      farmer.vx = speed * 0.45;
-      if (farmer.timer <= 0) enter(farmer, 'chase');
-      break;
-    case 'aim':
-      farmer.vx = speed * 0.85;
-      if (farmer.timer <= 0) {
-        run.spawnKnife(farmer.x + 40, farmer.aimHigh);
-        farmer.throwCooldown = run.random.range(stage.throwEvery[0], stage.throwEvery[1]);
-        enter(farmer, 'chase');
-      }
-      break;
-    case 'approach':
-      approachSpot(farmer, run, stage, speed, dt);
-      break;
-    case 'search':
-      searchSpot(farmer, run, stage);
-      break;
-    case 'pokeWindup':
-      farmer.vx = 0;
-      farmer.facing = 1;
-      if (farmer.timer <= 0) {
-        enter(farmer, 'poke', F.pokeSeconds);
-        run.onSpotPoked(farmer.searchSpot);
-      }
-      break;
-    case 'poke':
-      farmer.vx = 0;
-      if (farmer.timer <= 0) enter(farmer, 'chase');
-      break;
-    case 'confused':
-      farmer.vx = 0;
-      farmer.facing = -1;
-      if (farmer.timer <= 0) {
-        enter(farmer, 'chase');
-        sayLine(farmer, 'Hey! Get back here!', 1.4);
-      }
-      break;
-    case 'celebrate':
-      farmer.vx = 0;
-      farmer.facing = 1;
-      break;
-    case 'defeated':
-      farmer.vx = Math.max(0, farmer.vx - 700 * dt);
-      farmer.facing = 1;
-      break;
-    default:
-      if (isAmbushState(farmer.state)) updateAmbushFarmer(farmer, run, stage, dt);
-      else enter(farmer, 'chase');
-  }
-
-  // He may close in, but never runs through Tom while chasing.
-  const chasing = farmer.state === 'chase' || farmer.state === 'windup' || farmer.state === 'recover' || farmer.state === 'aim';
-  if (chasing && gap < 70 && !turkey.knockedOut) farmer.vx = Math.min(farmer.vx, Math.max(0, turkey.vx - 10));
-
-  farmer.x += farmer.vx * dt;
-  farmer.runPhase += dt * (2 + Math.abs(farmer.vx) / 38);
-}
-
 // Tom slipped out behind his back.
 export function startleFarmer(farmer, run) {
   enter(farmer, 'confused', F.confusedSeconds);
@@ -255,3 +249,13 @@ export function farmerCelebrates(farmer) {
   enter(farmer, 'celebrate');
   sayLine(farmer, "Dinner's served!", 3);
 }
+
+const GRAB_LINES = ['GOTCHA!', "C'mere, drumstick!", 'Dinner time!', 'Hold STILL!'];
+
+const CHASE_LINES = ['Get back here!', "You're the main course!", 'Grandma wants you basted!', 'Nobody skips Thanksgiving!'];
+
+const SEARCH_LINES = ['Here, birdy birdy...', "I know you're in there...", 'Come on out, Tom...'];
+
+const CONFUSED_LINES = ["Huh?! Where'd he go?", 'Was that... feathers?', 'Durn bird!'];
+
+const KNIFE_LINES = ['Catch, drumstick!', 'Hold still for the carving!', 'Hyaah!'];

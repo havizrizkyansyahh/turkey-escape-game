@@ -10,6 +10,16 @@ import { PALETTE as P, INK } from './palette.js';
 import { ellipsePath, roundRectPath, fillAndOutline, limb, groundShadow, chunkyText, star } from './brush.js';
 import { drawPeekingEyes } from './turkey-art.js';
 
+export function drawProps(ctx, entities, cameraX, layer, time) {
+  for (const entity of entities) {
+    if (entity.gone) continue;
+    const sx = entity.x - cameraX;
+    if (sx > 1260 || sx + entity.w < -300) continue;
+    const painter = PAINTERS[entity.kind]?.[layer];
+    if (painter) painter(ctx, entity, sx, time);
+  }
+}
+
 const PORCH_X = stageStartX(3);
 
 // ---------------------------------------------------------------- farmyard
@@ -1117,16 +1127,6 @@ const PAINTERS = {
   gate: { back: paintGateBack, front: paintGateFront },
   finishGate: { back: paintFinishBack, front: paintFinishFront },
 };
-
-export function drawProps(ctx, entities, cameraX, layer, time) {
-  for (const entity of entities) {
-    if (entity.gone) continue;
-    const sx = entity.x - cameraX;
-    if (sx > 1260 || sx + entity.w < -300) continue;
-    const painter = PAINTERS[entity.kind]?.[layer];
-    if (painter) painter(ctx, entity, sx, time);
-  }
-}
 
 export function isPastFinish(worldX) {
   return worldX >= ROUTE_END_X;

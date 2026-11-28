@@ -10,6 +10,28 @@ import { PALETTE as P, INK } from './palette.js';
 import { ellipsePath, roundRectPath, fillAndOutline, chunkyText, limb, star } from './brush.js';
 import { drawTurkey } from './turkey-art.js';
 
+export function drawBackdrops(ctx, cameraX, time) {
+  for (let i = 0; i < ZONES.length; i += 1) {
+    const zoneStart = ZONES[i].startX - cameraX;
+    const zoneEnd = i + 1 < ZONES.length ? ZONES[i + 1].startX - cameraX : Infinity;
+    const left = Math.max(0, zoneStart);
+    const right = Math.min(VIEW_WIDTH, zoneEnd);
+    if (right <= left) continue;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(left, 0, right - left, VIEW_HEIGHT);
+    ctx.clip();
+    ZONES[i].paint(ctx, cameraX, time);
+    ctx.restore();
+  }
+}
+
+// One stage's scene on its own, for the title and end screens.
+export function drawSceneBackdrop(ctx, sceneId, cameraX, time) {
+  const painters = { farmyard: paintFarmyard, barn: paintBarnInterior, kitchen: paintKitchen, porch: paintPorch, woods: paintWoods };
+  (painters[sceneId] ?? paintFarmyard)(ctx, cameraX, time);
+}
+
 function forEachTile(cameraX, depth, tileWidth, paint) {
   const offset = cameraX * depth;
   const first = Math.floor(offset / tileWidth) - 1;
@@ -699,25 +721,3 @@ const ZONES = [
   { startX: stageStartX(3), paint: paintPorch },
   { startX: ROUTE_END_X, paint: paintWoods },
 ];
-
-export function drawBackdrops(ctx, cameraX, time) {
-  for (let i = 0; i < ZONES.length; i += 1) {
-    const zoneStart = ZONES[i].startX - cameraX;
-    const zoneEnd = i + 1 < ZONES.length ? ZONES[i + 1].startX - cameraX : Infinity;
-    const left = Math.max(0, zoneStart);
-    const right = Math.min(VIEW_WIDTH, zoneEnd);
-    if (right <= left) continue;
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(left, 0, right - left, VIEW_HEIGHT);
-    ctx.clip();
-    ZONES[i].paint(ctx, cameraX, time);
-    ctx.restore();
-  }
-}
-
-// One stage's scene on its own, for the title and end screens.
-export function drawSceneBackdrop(ctx, sceneId, cameraX, time) {
-  const painters = { farmyard: paintFarmyard, barn: paintBarnInterior, kitchen: paintKitchen, porch: paintPorch, woods: paintWoods };
-  (painters[sceneId] ?? paintFarmyard)(ctx, cameraX, time);
-}

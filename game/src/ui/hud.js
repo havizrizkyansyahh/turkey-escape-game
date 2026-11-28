@@ -9,7 +9,22 @@ import { panel, chunkyText, plainText, roundRectPath, fillAndOutline, ellipsePat
 import { farmerGap } from '../run.js';
 import { isHidingSpot } from '../course.js';
 
+export function drawHud(ctx, run, game) {
+  const time = run.time;
+  drawScorePanel(ctx, run);
+  drawFarmerChip(ctx, run, time);
+  drawRouteBar(ctx, run);
+  drawLivesAndMeter(ctx, run, time);
+  if (!game?.shotMode) drawPauseButton(ctx);
+  drawKnifeWarnings(ctx, run, time);
+  drawFarmerOffscreen(ctx, run);
+  drawHidePrompts(ctx, run, time);
+  drawStageBanner(ctx, run);
+  if (game?.showKeys !== false && !run.outcome) drawControlsStrip(ctx);
+}
+
 export const STAGE_COLORS = ['#8f9e3c', '#b5402f', '#3f7b77', '#6b4a8a'];
+
 const STAGE_SHORT = ['FARMYARD', 'BARN', 'KITCHEN', 'PORCH'];
 
 export const PAUSE_BUTTON = { id: 'pause', x: 906, y: 96, w: 40, h: 30 };
@@ -307,17 +322,3 @@ const CONTROL_KEYS = [
   ['P', 'PAUSE'],
   ['H', 'KEYS'],
 ];
-
-export function drawHud(ctx, run, game) {
-  const time = run.time;
-  drawScorePanel(ctx, run);
-  drawFarmerChip(ctx, run, time);
-  drawRouteBar(ctx, run);
-  drawLivesAndMeter(ctx, run, time);
-  if (!game?.shotMode) drawPauseButton(ctx);
-  drawKnifeWarnings(ctx, run, time);
-  drawFarmerOffscreen(ctx, run);
-  drawHidePrompts(ctx, run, time);
-  drawStageBanner(ctx, run);
-  if (game?.showKeys !== false && !run.outcome) drawControlsStrip(ctx);
-}
