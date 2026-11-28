@@ -6,6 +6,7 @@ import { drawRunScene } from './render.js';
 import { drawHud, PAUSE_BUTTON } from './ui/hud.js';
 import { drawTitleScreen, drawPauseOverlay, drawEndScreen, titleButtons, pauseButtons, endButtons, buttonAt } from './ui/screens.js';
 import { loadBest, saveBest, emptyBest } from './storage.js';
+import { medalsEarned, mergeMedals } from './medals.js';
 
 const EVENT_SOUNDS = {
   jump: 'jump',
@@ -40,6 +41,12 @@ const EVENT_SOUNDS = {
   farmerLooksAway: 'tick',
   farmerLooksBack: 'tock',
   farmerPokeWindup: 'warn',
+  farmerShortcut: 'tick',
+  cornered: 'warn',
+  farmerSwipe: 'whoosh',
+  slippedPast: 'sneak',
+  hatHop: 'bonk',
+  bowledOver: 'smash',
 };
 
 export function createGame({ seed, audio = null, shotMode = false }) {
@@ -83,6 +90,10 @@ function finishRun(game) {
   if (summary.newBest) best.score = summary.score;
   best.meters = Math.max(best.meters, summary.meters);
   if (summary.outcome === 'escaped') best.escapes += 1;
+  summary.medals = medalsEarned(summary);
+  const { owned, fresh } = mergeMedals(best.medals ?? [], summary.medals);
+  best.medals = owned;
+  summary.newMedals = fresh;
   game.best = best;
   if (!game.shotMode) saveBest(best);
   game.summary = summary;

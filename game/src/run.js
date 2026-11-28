@@ -12,6 +12,7 @@ import { clamp } from './numbers.js';
 import { createTurkey, updateTurkey, turkeyBox, stumbleTurkey, hurtTurkey } from './turkey.js';
 import { createFarmer, updateFarmer, startleFarmer, spotTurkey, farmerGivesUp, farmerCelebrates } from './farmer.js';
 import { createAmbush, updateAmbush } from './ambush.js';
+import { createCombo, chainCloseCall, coolCombo } from './scoring.js';
 import { spawnBurst, spawnPopup, updateEffects } from './particles.js';
 import { createCamera, followTurkey, shakeCamera } from './camera.js';
 
@@ -70,8 +71,9 @@ export function createRun(seed) {
     stageBannerLeft: 3.2,
     score: 0,
     farthestX: turkey.x,
-    stats: { corn: 0, sneaks: 0, hides: 0, closeCalls: 0, hits: 0, dashes: 0, smashes: 0, hatHops: 0 },
+    stats: { corn: 0, sneaks: 0, hides: 0, closeCalls: 0, hits: 0, dashes: 0, smashes: 0, hatHops: 0, ovenCloseCalls: 0 },
     ambush: createAmbush(),
+    combo: createCombo(),
     hintsShown: new Set(),
     outcome: null,
     outcomeReason: null,
@@ -312,7 +314,8 @@ function takeHit(run, entity) {
   run.stats.hits += 1;
   const knockedOut = hurtTurkey(turkey);
   shakeCamera(run.camera, 11);
-  spawnPopup(run.popups, { text: HURT_WORDS[entity.kind] ?? 'OUCH!', x: turkey.x, y: turkey.y - 100, color: '#ff6b5a', size: 26 });
+  spawnPopup(run.popups, { text: HURT_WORDS[entity.kind] ?? 'OUCH!', x: turkey.x, y: turkey.y - 104, color: '#ff6b5a', size: 26 });
+  spawnPopup(run.popups, { text: '-1 FEATHER', x: turkey.x, y: turkey.y - 76, color: '#ffb3a6', size: 18 });
   featherPuff(run, 16);
   if (entity.kind === 'oven' || entity.kind === 'pot') {
     burst(run, { x: turkey.x, y: turkey.y - 30, count: 10, kind: 'smoke', colors: ['#8d8480', '#b9b0aa'], speed: 90, life: 1.0, size: 12, gravity: -120 });
@@ -363,8 +366,10 @@ function resolveContacts(run) {
     if (entity.nearMiss && !entity.hit && !entity.scored && hasPassed(entity, body)) {
       entity.scored = true;
       run.stats.closeCalls += 1;
-      addScore(run, S.closeCall, `CLOSE CALL! +${S.closeCall}`, turkey.x + 20, turkey.y - 96, '#ffe066', 20);
-      run.events.push({ type: 'closeCall' });
+      if (entity.kind === 'oven') run.stats.ovenCloseCalls += 1;
+      const chain = chainCloseCall(run.combo);
+      addScore(run, chain.points, chain.label, turkey.x + 20, turkey.y - 96, '#ffe066', 20 + Math.min(chain.count - 1, 3) * 3);
+      run.events.push({ type: 'closeCall', combo: chain.count });
     }
   }
 }
@@ -543,6 +548,7 @@ export function updateRun(run, controls, dt) {
   extendCourse(run.course, run.camera.x + VIEW_WIDTH + 900);
   pruneCourse(run.course, run.camera.x - 700);
   trailEffects(run, dt);
+  coolCombo(run.combo, dt);
   updateEffects(run.particles, run.popups, dt);
   followTurkey(run.camera, turkey.x, dt, run.effectsRandom);
   run.stageBannerLeft = Math.max(0, run.stageBannerLeft - dt);
