@@ -1,6 +1,6 @@
 [
   { "name": "1-kitchen-chase.jpg", "query": "?shot=kitchen&seed=7" },
   { "name": "2-title.jpg", "query": "?shot=title&seed=3" },
-  { "name": "3-haystack-hide.jpg", "query": "?shot=hide&seed=5" },
+  { "name": "3-barn-cornered.jpg", "query": "?shot=cornered&seed=5" },
   { "name": "4-escaped.jpg", "query": "?shot=escaped&seed=11" }
 ]

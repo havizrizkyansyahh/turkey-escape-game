@@ -8,8 +8,11 @@ import { createRun } from './run.js';
 import { addEntity } from './course.js';
 import { spawnPopup, spawnBurst } from './particles.js';
 import { sayLine } from './farmer.js';
+import { startAmbush } from './ambush.js';
 
-const SAMPLE_BEST = { score: 8640, meters: 1600, escapes: 2 };
+export function stageShot(game, name) {
+  (SHOTS[name] ?? SHOTS.title)(game);
+}
 
 function freshRun(game, stageIndex, time) {
   const run = createRun(game.seed);
@@ -52,7 +55,8 @@ function stageKitchenChase(game) {
   run.score = 4865;
   run.farthestX = turkey.x;
   run.stats.corn = 168;
-  spawnPopup(run.popups, { text: 'CLOSE CALL! +25', x: turkey.x + 10, y: turkey.y - 108, color: '#ffe066', size: 20, life: 0.9 });
+  run.stats.closeCalls = 3;
+  spawnPopup(run.popups, { text: 'CLOSE CALL x3 +75', x: turkey.x + 10, y: turkey.y - 108, color: '#ffe066', size: 26, life: 0.9 });
   run.popups[0].maxLife = 1.1;
   spawnBurst(run.particles, run.effectsRandom, { x: baseX + 40, y: GROUND_Y - 50, count: 12, kind: 'spark', colors: ['#ffe9a0', '#ffd166'], speed: 140, life: 0.8, size: 4, gravity: -60 });
   spawnBurst(run.particles, run.effectsRandom, { x: turkey.x - 30, y: turkey.y - 30, count: 5, kind: 'feather', colors: ['#b5652f', '#f7e2b8'], speed: 90, life: 1.2, size: 7, gravity: 60 });
@@ -96,6 +100,25 @@ function stageBarnDuck(game) {
   run.farthestX = turkey.x;
 }
 
+// The barn ambush: Farmer Bramble popped out ahead of Tom and scoops low, so Tom leaps it.
+function stageBarnCornered(game) {
+  const run = freshRun(game, 1, 58.3);
+  const baseX = stageStartX(1) + 5200;
+  run.camera.x = baseX - 300;
+  addEntity(run.course, 'baleStack', baseX - 250, { w: 80, h: 108 });
+  addEntity(run.course, 'barrel', baseX - 120, { w: 82, h: 98, used: true });
+  const turkey = run.turkey;
+  Object.assign(turkey, { x: baseX + 168, y: GROUND_Y - 112, onGround: false, vy: -150, flutterUsed: false, flapPhase: 0.7, runPhase: 1.1, vx: 292, lives: 3, meter: 46 });
+  startAmbush(run, { high: false, zoneX: baseX });
+  Object.assign(run.farmer, { x: baseX + 300, state: 'swipe', timer: 0.2, runPhase: 0.4 });
+  run.popups.length = 0;
+  sayLine(run.farmer, 'Nowhere to run, Tom!', 2);
+  spawnPopup(run.popups, { text: 'CORNERED!', x: baseX + 330, y: GROUND_Y - 330, color: '#ff5a4e', size: 44, life: 2 });
+  spawnPopup(run.popups, { text: 'Arms low: JUMP over! (or hop his hat)', x: baseX + 330, y: GROUND_Y - 284, color: '#ffe066', size: 19, life: 2, hint: true });
+  run.score = 3175;
+  run.farthestX = turkey.x;
+}
+
 function sampleSummary(outcome) {
   const escaped = outcome === 'escaped';
   return {
@@ -114,8 +137,12 @@ function sampleSummary(outcome) {
     hits: escaped ? 1 : 3,
     dashes: 9,
     smashes: 4,
+    hatHops: escaped ? 2 : 0,
+    ovenCloseCalls: escaped ? 7 : 2,
     rank: escaped ? 'Barnyard Legend' : 'Kitchen Fugitive',
     newBest: escaped,
+    medals: escaped ? ['greatEscape', 'hatHopper', 'ovenDancer', 'ghost'] : [],
+    newMedals: escaped ? ['hatHopper'] : [],
   };
 }
 
@@ -128,6 +155,7 @@ const SHOTS = {
   kitchen: stageKitchenChase,
   hide: stageHaystackHide,
   barn: stageBarnDuck,
+  cornered: stageBarnCornered,
   escaped(game) {
     game.screen = 'ended';
     game.time = 1.6;
@@ -142,6 +170,4 @@ const SHOTS = {
   },
 };
 
-export function stageShot(game, name) {
-  (SHOTS[name] ?? SHOTS.title)(game);
-}
+const SAMPLE_BEST = { score: 8640, meters: 1600, escapes: 2, medals: ['greatEscape', 'hatHopper', 'ovenDancer', 'ghost'] };
