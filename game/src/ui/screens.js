@@ -104,13 +104,14 @@ function drawHelpCard(ctx) {
     ['DOWN / S', 'Duck under beams, tablecloths and high knives.'],
     ['RIGHT / D   LEFT / A', 'Run faster, or slow down to time the oven.'],
     ['SHIFT / RIGHT-CLICK', 'Gobble-dash: outrun the farmer, smash pumpkins.'],
+    ['Q', 'Toss a corn decoy: he stops to sniff it (25 corn = 1 more).'],
     ['E', 'Hide in a haystack, barrel or the pantry...'],
     ['', '...and sneak out the moment he looks away!'],
-    ['CORNERED?', 'Arms up: duck under. Arms low: jump. Or hop his hat!'],
+    ['CORNERED?', 'Arms up: duck. Arms low: jump. Hop his hat, or toss corn!'],
     ['P / M / H', 'Pause, sound, and the key strip.'],
   ];
   rows.forEach(([keys, text], index) => {
-    const y = 176 + index * 34;
+    const y = 172 + index * 31;
     if (keys) {
       roundRectPath(ctx, 172, y - 14, 196, 28, 8);
       fillAndOutline(ctx, '#6b4730', 2, P.uiGold);

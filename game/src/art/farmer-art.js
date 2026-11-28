@@ -51,6 +51,7 @@ export function farmerLook(farmer, turkey) {
   else if (farmer.state === 'swipe') lean = farmer.ambushHigh ? 0.2 : 0.3;
   else if (farmer.state === 'cornering') lean = farmer.ambushHigh ? -0.04 : 0.22;
   else if (farmer.state === 'stunned') lean = -0.16;
+  else if (farmer.state === 'distracted') lean = 0.28;
   else if (farmer.state === 'windup') lean = -0.1;
   else if (farmer.state === 'poke') lean = 0.18;
   else if (moving) lean = 0.1;
@@ -61,8 +62,8 @@ export function farmerLook(farmer, turkey) {
     stride: farmer.runPhase,
     facing: farmer.facing,
     lean,
-    mouth: shouting ? 'shout' : farmer.state === 'confused' ? 'o' : 'grim',
-    brows: ['confused', 'search', 'stunned', 'tumble'].includes(farmer.state) ? 'raised' : 'angry',
+    mouth: shouting ? 'shout' : farmer.state === 'confused' || farmer.state === 'distracted' ? 'o' : 'grim',
+    brows: ['confused', 'search', 'stunned', 'tumble', 'distracted'].includes(farmer.state) ? 'raised' : 'angry',
     holdingTurkey: farmer.state === 'celebrate' && turkey.caught,
     scale: 1,
   };
@@ -327,4 +328,5 @@ const ARMS_BY_STATE = {
   shortcut: 'reach',
   stunned: 'scratch',
   tumble: 'scratch',
+  distracted: 'scoop', // bending down for the corn cob
 };

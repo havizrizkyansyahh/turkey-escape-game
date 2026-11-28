@@ -225,4 +225,8 @@ const EVENT_SOUNDS = {
   slippedPast: 'sneak',
   hatHop: 'bonk',
   bowledOver: 'smash',
+  decoyThrown: 'flutter',
+  decoyTaken: 'golden',
+  decoyEarned: 'feather',
+  decoyEmpty: 'dashEmpty',
 };

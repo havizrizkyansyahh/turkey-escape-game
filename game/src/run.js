@@ -2,14 +2,15 @@
 // ties them together — hiding and sneaking out, stumbles, hits, close calls, stage doors, the
 // escape into the woods and getting caught.
 
-import { GROUND_Y, PIXELS_PER_METER, ROUTE_END_X, SCORE_VALUES as S, TURKEY_TUNING as T, FARMER_TUNING, VIEW_WIDTH } from './config.js';
+import { GROUND_Y, PIXELS_PER_METER, ROUTE_END_X, SCORE_VALUES as S, TURKEY_TUNING as T, FARMER_TUNING, VIEW_WIDTH, DECOY_TUNING } from './config.js';
 import { STAGES, stageIndexAt } from './stages.js';
 import { createRandom } from './random.js';
 import { createCourse, extendCourse, pruneCourse, isHidingSpot } from './course.js';
 import { hitboxesOf, updateEntity, SMASHABLE } from './hazards.js';
 import { boxesOverlap, growBox } from './collisions.js';
 import { clamp } from './numbers.js';
-import { createTurkey, updateTurkey, turkeyBox, stumbleTurkey, hurtTurkey } from './turkey.js';
+import { createTurkey, updateTurkey, turkeyBox, stumbleTurkey, hurtTurkey, isTurkeyFree } from './turkey.js';
+import { throwDecoy, updateDecoys, earnDecoysForCorn } from './decoys.js';
 import { createFarmer, updateFarmer, startleFarmer, spotTurkey, farmerGivesUp, farmerCelebrates } from './farmer.js';
 import { createAmbush, updateAmbush } from './ambush.js';
 import { createCombo, chainCloseCall, coolCombo } from './scoring.js';
@@ -35,9 +36,10 @@ export function createRun(seed) {
     stageBannerLeft: 3.2,
     score: 0,
     farthestX: turkey.x,
-    stats: { corn: 0, sneaks: 0, hides: 0, closeCalls: 0, hits: 0, dashes: 0, smashes: 0, hatHops: 0, ovenCloseCalls: 0 },
+    stats: { corn: 0, sneaks: 0, hides: 0, closeCalls: 0, hits: 0, dashes: 0, smashes: 0, hatHops: 0, ovenCloseCalls: 0, decoysUsed: 0 },
     ambush: createAmbush(),
     combo: createCombo(),
+    decoys: DECOY_TUNING.start,
     hintsShown: new Set(),
     outcome: null,
     outcomeReason: null,
@@ -61,10 +63,12 @@ export function updateRun(run, controls, dt) {
   const turkey = run.turkey;
 
   if (!run.outcome) handleHiding(run, controls, stage);
+  if (controls.decoyPressed && !run.outcome && !turkey.hiddenIn && isTurkeyFree(turkey)) throwDecoy(run);
   updateTurkey(turkey, controls, stage, dt, run.events);
   for (const event of run.events) if (event.type === 'dash') run.stats.dashes += 1;
   updateAmbush(run, dt);
   updateFarmer(run.farmer, run, stage, dt);
+  updateDecoys(run, dt);
   for (const entity of run.course.entities) updateEntity(entity, dt, run);
   if (!run.outcome && !turkey.hiddenIn) resolveContacts(run);
 
@@ -240,6 +244,7 @@ function hasPassed(entity, body) {
 function collectPickup(run, entity) {
   const turkey = run.turkey;
   entity.gone = true;
+  const cornBefore = run.stats.corn;
   if (entity.kind === 'corn') {
     run.stats.corn += 1;
     turkey.meter = Math.min(T.meterMax, turkey.meter + T.cornMeter);
@@ -252,7 +257,12 @@ function collectPickup(run, entity) {
     addScore(run, S.goldenCorn, `GOLDEN COB! +${S.goldenCorn}`, entity.x + 13, entity.y - 34, '#ffd166', 22);
     burst(run, { x: entity.x + 13, y: entity.y, count: 16, kind: 'spark', colors: SPARK_COLORS, speed: 220, life: 0.6, size: 5, gravity: 0 });
     run.events.push({ type: 'golden' });
-  } else if (entity.kind === 'featherPickup') {
+  }
+  if (earnDecoysForCorn(run, cornBefore, run.stats.corn) > 0) {
+    spawnPopup(run.popups, { text: '+1 CORN DECOY [Q]', x: turkey.x, y: turkey.y - 128, color: '#f6cd3f', size: 19 });
+    run.events.push({ type: 'decoyEarned' });
+  }
+  if (entity.kind === 'featherPickup') {
     if (turkey.lives < T.maxLives) {
       turkey.lives += 1;
       spawnPopup(run.popups, { text: 'EXTRA TAIL FEATHER!', x: entity.x + 15, y: entity.y - 40, color: '#7bc950', size: 22 });
@@ -591,4 +601,4 @@ const HINTS = {
   rockingChair: 'Hop the rocking chairs!',
 };
 
-const HARMLESS_KINDS = new Set(['corn', 'goldenCorn', 'featherPickup', 'haystack', 'barrel', 'pantry', 'gate', 'finishGate']);
+const HARMLESS_KINDS = new Set(['corn', 'goldenCorn', 'featherPickup', 'haystack', 'barrel', 'pantry', 'gate', 'finishGate', 'decoy']);

@@ -1126,7 +1126,27 @@ const PAINTERS = {
   rockingChair: { floor: paintRockingChair },
   gate: { back: paintGateBack, front: paintGateFront },
   finishGate: { back: paintFinishBack, front: paintFinishFront },
+  decoy: { floor: paintDecoy },
 };
+
+// A tossed corn-cob decoy: spinning through the air, then lying on the floor.
+function paintDecoy(ctx, e, sx, time) {
+  const cx = sx + e.w / 2;
+  ctx.save();
+  ctx.translate(cx, e.y);
+  ctx.rotate(e.landed ? Math.PI / 2 + Math.sin(time * 9) * 0.06 : e.spin);
+  ctx.fillStyle = P.leaf;
+  for (const side of [-1, 1]) {
+    ctx.beginPath();
+    ctx.moveTo(0, 12);
+    ctx.quadraticCurveTo(side * 11, 4, side * 7, -8);
+    ctx.quadraticCurveTo(side * 3, 2, 0, 12);
+    ctx.fill();
+  }
+  ellipsePath(ctx, 0, -1, 6, 11.5);
+  fillAndOutline(ctx, '#f6cd3f', 2);
+  ctx.restore();
+}
 
 export function isPastFinish(worldX) {
   return worldX >= ROUTE_END_X;

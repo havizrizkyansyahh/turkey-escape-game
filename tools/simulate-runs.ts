@@ -57,13 +57,14 @@ type Controls = {
   jumpPressed: boolean;
   dashPressed: boolean;
   hidePressed: boolean;
+  decoyPressed: boolean;
 };
 
 const JUMPABLE = new Set(['haybale', 'pumpkin', 'fence', 'pitchforks', 'pot', 'mud', 'chicken', 'rockingChair', 'baleStack']);
 const DUCKABLE = new Set(['beam', 'table']);
 
 function idle(): Controls {
-  return { left: false, right: false, duck: false, jump: false, jumpPressed: false, dashPressed: false, hidePressed: false };
+  return { left: false, right: false, duck: false, jump: false, jumpPressed: false, dashPressed: false, hidePressed: false, decoyPressed: false };
 }
 
 function goodBot(run: any, memory: { holdJump: number; hid: number }): Controls {
@@ -99,6 +100,7 @@ function goodBot(run: any, memory: { holdJump: number; hid: number }): Controls 
     c.hidePressed = true;
     return c;
   }
+  if (chasing && f.state === 'chase' && gap < 200 && run.decoys > 0) c.decoyPressed = true;
   if (chasing && gap < 175 && t.meter >= 34) c.dashPressed = true;
 
   for (const e of run.course.entities) {
@@ -171,7 +173,7 @@ for (let seed = firstSeed; seed < firstSeed + runs; seed += 1) {
       maxEntities = Math.max(maxEntities, run.course.entities.length);
       for (const event of run.events) {
         if (event.type === 'hurt') hurtCauses[event.cause] = (hurtCauses[event.cause] ?? 0) + 1;
-        if (['stumble', 'bonk', 'bawk', 'mud', 'spotted', 'farmerWindup', 'farmerMissed', 'cornered', 'slippedPast', 'hatHop', 'bowledOver'].includes(event.type)) {
+        if (['stumble', 'bonk', 'bawk', 'mud', 'spotted', 'farmerWindup', 'farmerMissed', 'cornered', 'slippedPast', 'hatHop', 'bowledOver', 'decoyThrown', 'decoyTaken'].includes(event.type)) {
           const key = event.kind ? `${event.type}:${event.kind}` : event.type;
           setbacks[key] = (setbacks[key] ?? 0) + 1;
           if (process.env.TRACE === String(seed) && event.type === 'stumble') {

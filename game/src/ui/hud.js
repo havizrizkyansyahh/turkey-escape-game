@@ -2,7 +2,7 @@
 // tail feathers (lives), the gobble-dash meter, how close the farmer is, the stage banner, knife
 // warnings at the screen edge, and the prompts for hiding and sneaking out.
 
-import { GROUND_Y, VIEW_WIDTH, VIEW_HEIGHT, PIXELS_PER_METER, ROUTE_END_X, TURKEY_TUNING } from '../config.js';
+import { GROUND_Y, VIEW_WIDTH, VIEW_HEIGHT, PIXELS_PER_METER, ROUTE_END_X, TURKEY_TUNING, DECOY_TUNING } from '../config.js';
 import { STAGES, stageStartX } from '../stages.js';
 import { PALETTE as P, INK } from '../art/palette.js';
 import { panel, chunkyText, plainText, roundRectPath, fillAndOutline, ellipsePath, textWidth, BODY_FONT } from '../art/brush.js';
@@ -82,6 +82,8 @@ function farmerStatus(run) {
     case 'tumble':
     case 'confused':
       return { text: 'FARMER FOOLED!', color: P.uiGreen, alarm: false };
+    case 'distracted':
+      return { text: 'FARMER DECOYED! RUN!', color: P.uiGreen, alarm: false };
     case 'approach':
     case 'search':
       return { text: 'FARMER SEARCHING...', color: P.uiGold, alarm: farmer.state === 'search' && farmer.lookingAtSpot };
@@ -184,6 +186,18 @@ function drawLivesAndMeter(ctx, run, time) {
   roundRectPath(ctx, meterLeft, 62, meterWidth, 14, 7);
   ctx.strokeStyle = 'rgba(255, 246, 229, 0.6)';
   ctx.stroke();
+  drawDecoyChip(ctx, run);
+}
+
+// Corn decoys in hand: a cob icon each, and the key that tosses one.
+function drawDecoyChip(ctx, run) {
+  const has = run.decoys > 0;
+  panel(ctx, 746, 94, 152, 32, { radius: 10, edge: has ? P.uiGold : 'rgba(255, 246, 229, 0.35)', edgeWidth: 2 });
+  plainText(ctx, 'DECOY [Q]', 758, 111, { size: 12, color: has ? P.uiGold : 'rgba(255, 246, 229, 0.5)', weight: '800' });
+  for (let i = 0; i < DECOY_TUNING.max; i += 1) {
+    ellipsePath(ctx, 846 + i * 17, 110, 5, 9);
+    fillAndOutline(ctx, i < run.decoys ? '#f6cd3f' : 'rgba(255, 246, 229, 0.15)', 2);
+  }
 }
 
 function drawPauseButton(ctx) {
@@ -318,6 +332,7 @@ const CONTROL_KEYS = [
   ['S', 'DUCK'],
   ['SHIFT', 'GOBBLE-DASH'],
   ['E', 'HIDE'],
+  ['Q', 'DECOY'],
   ['← →', 'PACE'],
   ['P', 'PAUSE'],
   ['H', 'KEYS'],

@@ -176,6 +176,9 @@ export function drawFarmerAlert(ctx, farmer, screenX, time) {
   } else if (farmer.state === 'confused') {
     symbol = '?';
     color = '#a8d8ff';
+  } else if (farmer.state === 'distracted') {
+    symbol = '♥';
+    color = '#f6cd3f';
   }
   if (!symbol) return;
   const bounce = Math.abs(Math.sin(time * 9)) * 5;

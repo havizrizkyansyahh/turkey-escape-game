@@ -86,6 +86,13 @@ export function updateFarmer(farmer, run, stage, dt) {
       farmer.vx = 0;
       if (farmer.timer <= 0) enter(farmer, 'chase');
       break;
+    case 'distracted':
+      farmer.vx = 0;
+      if (farmer.timer <= 0 && run.turkey.x > farmer.x + 40) {
+        enter(farmer, 'chase');
+        sayLine(farmer, 'Wait... DINNER!', 1.2);
+      }
+      break;
     case 'confused':
       farmer.vx = 0;
       farmer.facing = -1;

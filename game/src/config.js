@@ -82,6 +82,14 @@ export const AMBUSH_TUNING = {
   walkBackSpeed: 220, // toward a Tom with no feathers left
 };
 
+export const DECOY_TUNING = {
+  start: 1, // corn decoys Tom starts each run with
+  max: 3,
+  cornPerDecoy: 25, // every 25 corn gobbled earns another
+  distractSeconds: 1.5, // how long the farmer stops to sniff the cob
+  lifeSeconds: 6, // an untouched cob is gone after this
+};
+
 export const SCORE_VALUES = {
   perMeter: 1,
   corn: 10,

@@ -89,6 +89,11 @@ export function planAmbush(run, dt) {
   ambush.phase = 'planned';
 }
 
+// A corn decoy pulled the farmer out of his stance: this ambush is over.
+export function abandonAmbush(run) {
+  finish(run);
+}
+
 export function createAmbush() {
   return { wait: 0, zoneX: 0, phase: 'none', high: false, stage: -1 };
 }
