@@ -38,7 +38,7 @@ export function farmerLook(farmer, turkey) {
   let lean = 0;
   const ambushing = farmer.state === 'cornering' || farmer.state === 'swipe';
   if (farmer.state === 'lunge') lean = 0.34;
-  else if (farmer.state === 'swipe') lean = farmer.ambushHigh ? 0.2 : 0.42;
+  else if (farmer.state === 'swipe') lean = farmer.ambushHigh ? 0.2 : 0.3;
   else if (farmer.state === 'cornering') lean = farmer.ambushHigh ? -0.04 : 0.22;
   else if (farmer.state === 'stunned') lean = -0.16;
   else if (farmer.state === 'windup') lean = -0.1;
@@ -68,7 +68,7 @@ function armsFor(look) {
     case 'block':
       return { back: [SHOULDER_BACK, [2, -158], [34, -170]], front: [SHOULDER_FRONT, [46, -156], [78, -164]], hand: 'open' };
     case 'scoop':
-      return { back: [SHOULDER_BACK, [8, -98], [36, -56]], front: [SHOULDER_FRONT, [42, -94], [70, -50]], hand: 'open' };
+      return { back: [SHOULDER_BACK, [18, -104], [58, -70]], front: [SHOULDER_FRONT, [52, -100], [92, -66]], hand: 'open' };
     case 'throw':
       return { back: [SHOULDER_BACK, [-34, -152], [-22, -182]], front: [SHOULDER_FRONT, [38, -124], [58, -130]], hand: 'open', backTool: 'knife' };
     case 'shade':

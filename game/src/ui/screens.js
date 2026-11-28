@@ -3,11 +3,14 @@
 
 import { GROUND_Y, VIEW_WIDTH, VIEW_HEIGHT } from '../config.js';
 import { PALETTE as P, INK } from '../art/palette.js';
-import { panel, chunkyText, plainText, roundRectPath, fillAndOutline, ellipsePath, star } from '../art/brush.js';
+import { panel, chunkyText, plainText, roundRectPath, fillAndOutline, ellipsePath, star, textWidth, BODY_FONT } from '../art/brush.js';
 import { drawSceneBackdrop } from '../art/backdrops.js';
 import { drawTurkey } from '../art/turkey-art.js';
 import { drawFarmer } from '../art/farmer-art.js';
-import { drawSpeechBubble } from '../art/effects-art.js';
+import { drawProps } from '../art/props-art.js';
+import { drawSpeechBubble, drawSightCone, drawLantern } from '../art/effects-art.js';
+import { STAGE_COLORS } from './hud.js';
+import { MEDALS } from '../medals.js';
 
 export function titleButtons(game) {
   return [
@@ -103,10 +106,11 @@ function drawHelpCard(ctx) {
     ['SHIFT / RIGHT-CLICK', 'Gobble-dash: outrun the farmer, smash pumpkins.'],
     ['E', 'Hide in a haystack, barrel or the pantry...'],
     ['', '...and sneak out the moment he looks away!'],
-    ['P / M', 'Pause, and sound on or off.'],
+    ['CORNERED?', 'Arms up: duck under. Arms low: jump. Or hop his hat!'],
+    ['P / M / H', 'Pause, sound, and the key strip.'],
   ];
   rows.forEach(([keys, text], index) => {
-    const y = 180 + index * 38;
+    const y = 176 + index * 34;
     if (keys) {
       roundRectPath(ctx, 172, y - 14, 196, 28, 8);
       fillAndOutline(ctx, '#6b4730', 2, P.uiGold);
@@ -120,20 +124,67 @@ function drawHelpCard(ctx) {
 
 export function drawTitleScreen(ctx, game) {
   const time = game.time;
-  drawSceneBackdrop(ctx, 'farmyard', time * 150, time);
-  drawFarmer(ctx, 196, GROUND_Y, { arms: 'reach', moving: true, stride: time * 9, facing: 1, lean: 0.1, mouth: 'shout', brows: 'angry', scale: 1.06 }, time);
-  drawTurkey(ctx, 772, GROUND_Y, { pose: 'run', phase: time * 15, flap: time * 8, scale: 1.5, blink: time % 3 < 0.1 }, time);
-  drawSpeechBubble(ctx, 'Come back here, drumstick!', 214, GROUND_Y - 226);
+  drawSceneBackdrop(ctx, 'farmyard', 420, time);
+  drawWrongHaystackSearch(ctx, time);
+  drawSneakingTom(ctx, 176, time);
   drawLogo(ctx, 480, 112, time);
   drawRibbon(ctx, 480, 214, "TOM WATTLE'S GREAT THANKSGIVING ESCAPE");
   drawButtons(ctx, titleButtons(game), game.pointer);
-  if (game.best.score > 0) {
-    panel(ctx, 356, 392, 248, 30, { radius: 10 });
-    plainText(ctx, `BEST ${game.best.score.toLocaleString('en-US')}  ·  ESCAPES ${game.best.escapes}`, 480, 408, { size: 14, align: 'center', color: P.uiGold, weight: '800' });
-  }
-  panel(ctx, 70, 548, 820, 40, { radius: 14 });
-  plainText(ctx, 'ENTER start  ·  SPACE jump & flutter  ·  ↓ duck  ·  SHIFT dash  ·  E hide  ·  ←/→ pace  ·  P pause', 480, 569, { size: 14, align: 'center', weight: '800' });
+  const best = game.best;
+  panel(ctx, 316, 392, 328, 30, { radius: 10 });
+  plainText(ctx, `BEST ${best.score.toLocaleString('en-US')}  ·  ESCAPES ${best.escapes}  ·  MEDALS ${(best.medals ?? []).length}/${MEDALS.length}`, 480, 408, { size: 14, align: 'center', color: P.uiGold, weight: '800' });
+  drawStageMap(ctx);
   if (game.showHelp) drawHelpCard(ctx);
+}
+
+// The attract scene: Farmer Bramble shines his lantern into the wrong haystack...
+function drawWrongHaystackSearch(ctx, time) {
+  const haystack = { kind: 'haystack', x: 646, y: GROUND_Y, w: 136, h: 118, gone: false, used: false, occupied: false, timer: 0 };
+  drawProps(ctx, [haystack], 0, 'back', time);
+  drawFarmer(ctx, 858, GROUND_Y, { arms: 'shade', moving: false, stride: 0, facing: -1, lean: 0.06, mouth: 'grim', brows: 'raised', scale: 1 }, time);
+  drawSightCone(ctx, 844, GROUND_Y - 160, -1, true, time);
+  drawLantern(ctx, 880, GROUND_Y - 96, time);
+  drawSpeechBubble(ctx, 'Here, birdy birdy...', 838, GROUND_Y - 246);
+}
+
+// ...while Tom tiptoes off the other way.
+function drawSneakingTom(ctx, x, time) {
+  ctx.save();
+  ctx.translate(x, 0);
+  ctx.scale(-1, 1);
+  drawTurkey(ctx, 0, GROUND_Y, { pose: 'run', phase: time * 6, flap: time * 4, scale: 1.45, blink: time % 3 < 0.1 }, time);
+  ctx.restore();
+  drawSpeechBubble(ctx, 'Shh...!', x + 10, GROUND_Y - 150);
+}
+
+// The route of the escape, from the farmyard to the woods, one stop per stage.
+function drawStageMap(ctx) {
+  const stops = [
+    ['FARMYARD', STAGE_COLORS[0]],
+    ['BIG RED BARN', STAGE_COLORS[1]],
+    ["GRANDMA'S KITCHEN", STAGE_COLORS[2]],
+    ['FRONT PORCH', STAGE_COLORS[3]],
+    ['THE WOODS: FREEDOM!', '#3d7a3a'],
+  ];
+  const widths = stops.map(([name]) => textWidth(ctx, name, 13, BODY_FONT, '800') + 22);
+  const arrow = 22;
+  const lead = textWidth(ctx, 'ROUTE', 13, BODY_FONT, '800') + 14;
+  const total = lead + widths.reduce((sum, width) => sum + width, 0) + arrow * (stops.length - 1);
+  let x = (VIEW_WIDTH - total) / 2;
+  const y = 568;
+  panel(ctx, x - 14, y - 20, total + 28, 40, { radius: 14 });
+  plainText(ctx, 'ROUTE', x, y + 1, { size: 13, color: P.uiGold, weight: '800' });
+  x += lead;
+  stops.forEach(([name, color], index) => {
+    roundRectPath(ctx, x, y - 12, widths[index], 24, 8);
+    fillAndOutline(ctx, color, 2);
+    plainText(ctx, name, x + widths[index] / 2, y + 1, { size: 13, align: 'center', color: P.uiText, weight: '800' });
+    x += widths[index];
+    if (index < stops.length - 1) {
+      plainText(ctx, '→', x + arrow / 2, y + 1, { size: 15, align: 'center', color: P.uiGold, weight: '800' });
+      x += arrow;
+    }
+  });
 }
 
 // ---------------------------------------------------------------- pause
@@ -245,6 +296,46 @@ function drawStatsCard(ctx, summary, game) {
   }
 }
 
+// The six medals under the end scene: this run's in gold, first-time wins tagged NEW!
+function drawMedalRow(ctx, summary) {
+  const earned = new Set(summary.medals ?? []);
+  const fresh = new Set(summary.newMedals ?? []);
+  const left = 24;
+  const top = 494;
+  panel(ctx, left, top, 516, 96, { radius: 16, fill: 'rgba(43, 26, 18, 0.9)' });
+  plainText(ctx, `MEDALS THIS RUN: ${earned.size} OF ${MEDALS.length}`, left + 16, top + 16, { size: 13, color: P.uiGold, weight: '800' });
+  MEDALS.forEach((medal, index) => {
+    const x = left + 48 + index * 84;
+    const y = top + 48;
+    const won = earned.has(medal.id);
+    drawMedal(ctx, x, y, won);
+    plainText(ctx, medal.name, x, top + 82, { size: 10, align: 'center', color: won ? P.uiText : 'rgba(255, 246, 229, 0.42)', weight: '800' });
+    if (fresh.has(medal.id)) {
+      roundRectPath(ctx, x + 6, y - 26, 34, 15, 5);
+      fillAndOutline(ctx, P.uiRed, 2);
+      plainText(ctx, 'NEW!', x + 23, y - 18, { size: 10, align: 'center', color: P.uiText, weight: '900' });
+    }
+  });
+}
+
+function drawMedal(ctx, x, y, won) {
+  ctx.save();
+  ctx.globalAlpha = won ? 1 : 0.35;
+  for (const side of [-1, 1]) {
+    ctx.beginPath();
+    ctx.moveTo(x + side * 4, y + 8);
+    ctx.lineTo(x + side * 12, y + 24);
+    ctx.lineTo(x + side * 3, y + 20);
+    ctx.closePath();
+    fillAndOutline(ctx, side < 0 ? P.barnRed : '#3f7b77', 2);
+  }
+  ellipsePath(ctx, x, y, 16, 16);
+  fillAndOutline(ctx, won ? '#f2c14e' : '#8c7a66', 2.5);
+  star(ctx, x, y, 9, 4, 5);
+  fillAndOutline(ctx, won ? '#fff3b0' : '#b3a28c', 1.5);
+  ctx.restore();
+}
+
 export function drawEndScreen(ctx, game) {
   const summary = game.summary;
   const escaped = summary.outcome === 'escaped';
@@ -259,6 +350,7 @@ export function drawEndScreen(ctx, game) {
   const subtitle = escaped ? "Tom is nobody's dinner tonight!" : `Farmer Bramble nabbed Tom in ${summary.stageTitle}.`;
   chunkyText(ctx, subtitle, 480, 134, { size: 22, fill: P.cream, outline: 5 });
   drawStatsCard(ctx, summary, game);
+  drawMedalRow(ctx, summary);
   drawButtons(ctx, endButtons(), game.pointer);
   plainText(ctx, 'ENTER or R to run again  ·  ESC for the title', 734, 566, { size: 13, align: 'center', color: 'rgba(255, 246, 229, 0.85)', weight: '800' });
 }

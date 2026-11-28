@@ -5,11 +5,11 @@
 import { GROUND_Y, VIEW_WIDTH, VIEW_HEIGHT, PIXELS_PER_METER, ROUTE_END_X, TURKEY_TUNING } from '../config.js';
 import { STAGES, stageStartX } from '../stages.js';
 import { PALETTE as P, INK } from '../art/palette.js';
-import { panel, chunkyText, plainText, roundRectPath, fillAndOutline, ellipsePath } from '../art/brush.js';
+import { panel, chunkyText, plainText, roundRectPath, fillAndOutline, ellipsePath, textWidth, BODY_FONT } from '../art/brush.js';
 import { farmerGap } from '../run.js';
 import { isHidingSpot } from '../course.js';
 
-const STAGE_COLORS = ['#8f9e3c', '#b5402f', '#3f7b77', '#6b4a8a'];
+export const STAGE_COLORS = ['#8f9e3c', '#b5402f', '#3f7b77', '#6b4a8a'];
 const STAGE_SHORT = ['FARMYARD', 'BARN', 'KITCHEN', 'PORCH'];
 
 export const PAUSE_BUTTON = { id: 'pause', x: 906, y: 96, w: 40, h: 30 };
@@ -44,26 +44,58 @@ function drawFeatherIcon(ctx, x, y, filled, scale = 1) {
 
 function drawScorePanel(ctx, run) {
   panel(ctx, 14, 12, 200, 76);
-  plainText(ctx, 'SCORE', 30, 30, { size: 13, color: P.uiGold, weight: '800' });
-  chunkyText(ctx, formatNumber(run.score), 30, 57, { size: 30, align: 'left', outline: 5 });
   const meters = Math.floor(run.turkey.x / PIXELS_PER_METER);
-  plainText(ctx, `${meters} m  ·  ${STAGES[run.stageIndex].title}`, 30, 78, { size: 12, color: 'rgba(255, 246, 229, 0.85)' });
+  plainText(ctx, 'SCORE', 30, 30, { size: 13, color: P.uiGold, weight: '800' });
+  plainText(ctx, `DISTANCE ${meters} m`, 198, 30, { size: 12, align: 'right', color: P.uiGold, weight: '800' });
+  chunkyText(ctx, formatNumber(run.score), 30, 57, { size: 30, align: 'left', outline: 5 });
+  plainText(ctx, `STAGE ${run.stageIndex + 1}/${STAGES.length}  ·  ${STAGE_SHORT[run.stageIndex]}`, 30, 78, { size: 12, color: P.uiText, weight: '800' });
+}
+
+// What the farmer is up to right now, in words: chasing, searching, cornering, or fooled.
+function farmerStatus(run) {
+  const farmer = run.farmer;
+  const gap = farmerGap(run);
+  const meters = Math.max(0, Math.round(Math.abs(gap) / PIXELS_PER_METER));
+  switch (farmer.state) {
+    case 'shortcut':
+      return { text: 'FARMER: SHORTCUT?!', color: P.uiGold, alarm: false };
+    case 'cornering':
+    case 'swipe':
+      return { text: farmer.ambushHigh ? 'CORNERED! DUCK UNDER!' : 'CORNERED! JUMP OVER!', color: P.uiRed, alarm: true };
+    case 'stunned':
+      return { text: 'FARMER KNOCKED SILLY!', color: P.uiGreen, alarm: false };
+    case 'tumble':
+    case 'confused':
+      return { text: 'FARMER FOOLED!', color: P.uiGreen, alarm: false };
+    case 'approach':
+    case 'search':
+      return { text: 'FARMER SEARCHING...', color: P.uiGold, alarm: farmer.state === 'search' && farmer.lookingAtSpot };
+    case 'pokeWindup':
+    case 'poke':
+      return { text: 'PITCHFORK POKE!', color: P.uiRed, alarm: true };
+    case 'aim':
+      return { text: `KNIFE INCOMING! · ${meters} m`, color: P.uiRed, alarm: true };
+    case 'windup':
+    case 'lunge':
+      return { text: 'FARMER LUNGING!', color: P.uiRed, alarm: true };
+    default:
+      break;
+  }
+  if (run.turkey.hiddenIn) return { text: 'TOM IS HIDDEN', color: P.uiGreen, alarm: false };
+  if (gap < 220) return { text: `FARMER CHASING · ${meters} m!`, color: P.uiRed, alarm: true };
+  return { text: `FARMER CHASING · ${meters} m`, color: gap < 360 ? P.uiGold : P.uiGreen, alarm: false };
 }
 
 function drawFarmerChip(ctx, run, time) {
-  const gap = farmerGap(run);
-  const meters = Math.max(0, Math.round(gap / PIXELS_PER_METER));
-  const close = gap < 220;
-  const color = gap < 220 ? P.uiRed : gap < 360 ? P.uiGold : P.uiGreen;
-  const pulse = close ? 0.6 + 0.4 * Math.sin(time * 12) : 1;
-  panel(ctx, 14, 94, 200, 32, { radius: 10, edge: color, edgeWidth: close ? 3 : 2 });
-  ellipsePath(ctx, 34, 110, 7, 7);
+  const status = farmerStatus(run);
+  const pulse = status.alarm ? 0.6 + 0.4 * Math.sin(time * 12) : 1;
+  panel(ctx, 14, 94, 212, 32, { radius: 10, edge: status.color, edgeWidth: status.alarm ? 3 : 2 });
+  ellipsePath(ctx, 32, 110, 7, 7);
   ctx.save();
   ctx.globalAlpha = pulse;
-  fillAndOutline(ctx, color, 2);
+  fillAndOutline(ctx, status.color, 2);
   ctx.restore();
-  const label = run.turkey.hiddenIn ? 'FARMER IS SEARCHING' : close ? `FARMER: ${meters} m — RUN!` : `FARMER: ${meters} m behind`;
-  plainText(ctx, label, 50, 111, { size: 13, color: P.uiText, weight: '800' });
+  plainText(ctx, status.text, 46, 111, { size: 13, color: status.alarm ? status.color : P.uiText, weight: '800' });
 }
 
 function routeX(worldX, left, width) {
@@ -186,7 +218,13 @@ function drawKnifeWarnings(ctx, run, time) {
 
 function drawFarmerOffscreen(ctx, run) {
   const screenX = run.farmer.x - run.camera.x;
-  if (screenX > -40 || run.outcome) return;
+  if (run.outcome) return;
+  if (screenX > VIEW_WIDTH + 30 && (run.farmer.state === 'cornering' || run.farmer.state === 'swipe')) {
+    panel(ctx, VIEW_WIDTH - 150, GROUND_Y - 150, 142, 34, { radius: 10, edge: P.uiRed, edgeWidth: 3 });
+    plainText(ctx, 'FARMER AHEAD ▶', VIEW_WIDTH - 79, GROUND_Y - 133, { size: 13, align: 'center', color: P.uiText, weight: '800' });
+    return;
+  }
+  if (screenX > -40) return;
   const meters = Math.round(farmerGap(run) / PIXELS_PER_METER);
   panel(ctx, 8, GROUND_Y - 150, 96, 34, { radius: 10, edge: 'rgba(255, 246, 229, 0.5)' });
   plainText(ctx, `◀ FARMER ${meters}m`, 18, GROUND_Y - 133, { size: 12, color: P.uiText, weight: '800' });
@@ -240,15 +278,35 @@ function drawHidePrompts(ctx, run, time) {
   chunkyText(ctx, '[E] HIDE!', x, GROUND_Y - spot.h - 41 + bob, { size: 17, fill: P.uiGold, outline: 4, shadow: false });
 }
 
-function drawControlsHint(ctx, run) {
-  if (run.time > 9 || run.outcome) return;
-  const fade = Math.min(1, (9 - run.time) / 1);
-  ctx.save();
-  ctx.globalAlpha = fade;
-  panel(ctx, 130, VIEW_HEIGHT - 50, 700, 38, { radius: 14 });
-  plainText(ctx, 'SPACE jump (again to flutter)  ·  ↓ duck  ·  SHIFT gobble-dash  ·  E hide  ·  ←/→ pace  ·  P pause', 480, VIEW_HEIGHT - 30, { size: 14, align: 'center', weight: '800' });
-  ctx.restore();
+// The keys along the bottom of the screen, as key caps. H hides or shows the strip.
+function drawControlsStrip(ctx) {
+  const y = VIEW_HEIGHT - 17;
+  const gap = 14;
+  const items = CONTROL_KEYS.map(([key, label]) => {
+    const capWidth = Math.max(24, textWidth(ctx, key, 12, BODY_FONT, '800') + 14);
+    return { key, label, capWidth, width: capWidth + 6 + textWidth(ctx, label, 12, BODY_FONT, '800') };
+  });
+  const total = items.reduce((sum, item) => sum + item.width, 0) + gap * (items.length - 1);
+  let x = (VIEW_WIDTH - total) / 2;
+  panel(ctx, x - 14, y - 15, total + 28, 30, { radius: 12, edgeWidth: 1.5, fill: 'rgba(43, 26, 18, 0.82)' });
+  for (const item of items) {
+    roundRectPath(ctx, x, y - 10, item.capWidth, 20, 5);
+    fillAndOutline(ctx, '#fff3dc', 2);
+    plainText(ctx, item.key, x + item.capWidth / 2, y + 1, { size: 12, align: 'center', color: INK, weight: '800' });
+    plainText(ctx, item.label, x + item.capWidth + 6, y + 1, { size: 12, color: P.uiText, weight: '800' });
+    x += item.width + gap;
+  }
 }
+
+const CONTROL_KEYS = [
+  ['SPACE', 'JUMP · FLUTTER'],
+  ['S', 'DUCK'],
+  ['SHIFT', 'GOBBLE-DASH'],
+  ['E', 'HIDE'],
+  ['← →', 'PACE'],
+  ['P', 'PAUSE'],
+  ['H', 'KEYS'],
+];
 
 export function drawHud(ctx, run, game) {
   const time = run.time;
@@ -261,5 +319,5 @@ export function drawHud(ctx, run, game) {
   drawFarmerOffscreen(ctx, run);
   drawHidePrompts(ctx, run, time);
   drawStageBanner(ctx, run);
-  drawControlsHint(ctx, run);
+  if (game?.showKeys !== false && !run.outcome) drawControlsStrip(ctx);
 }

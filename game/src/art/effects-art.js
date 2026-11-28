@@ -110,6 +110,45 @@ export function drawSpeechBubble(ctx, text, x, y, alpha = 1) {
   ctx.restore();
 }
 
+// The farmer's line of sight: a hot amber cone while he stares at a hiding spot, a faint wash
+// while he looks away.
+export function drawSightCone(ctx, apexX, apexY, facing, staring, time) {
+  const length = 300;
+  const spread = 0.36;
+  const aim = facing > 0 ? 0.42 : Math.PI - 0.42; // looking down toward the spot
+  const flicker = 1 + Math.sin(time * 17) * 0.04;
+  const beam = ctx.createRadialGradient(apexX, apexY, 8, apexX, apexY, length);
+  beam.addColorStop(0, staring ? `rgba(255, 196, 64, ${0.55 * flicker})` : 'rgba(255, 246, 229, 0.2)');
+  beam.addColorStop(1, staring ? 'rgba(255, 160, 40, 0.06)' : 'rgba(255, 246, 229, 0)');
+  ctx.save();
+  ctx.fillStyle = beam;
+  ctx.beginPath();
+  ctx.moveTo(apexX, apexY);
+  ctx.arc(apexX, apexY, length, aim - spread, aim + spread);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+// The farmer's barn lantern, glowing in his hand.
+export function drawLantern(ctx, x, y, time) {
+  const glow = ctx.createRadialGradient(x, y + 12, 2, x, y + 12, 46);
+  glow.addColorStop(0, `rgba(255, 214, 120, ${0.55 + Math.sin(time * 13) * 0.08})`);
+  glow.addColorStop(1, 'rgba(255, 214, 120, 0)');
+  ctx.fillStyle = glow;
+  ctx.fillRect(x - 46, y - 34, 92, 92);
+  roundRectPath(ctx, x - 9, y, 18, 26, 4);
+  fillAndOutline(ctx, '#ffd98a', 2.5);
+  ctx.strokeStyle = INK;
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.arc(x, y, 7, Math.PI, 0);
+  ctx.stroke();
+  ctx.fillStyle = '#3b2416';
+  ctx.fillRect(x - 11, y - 3, 22, 5);
+  ctx.fillRect(x - 11, y + 24, 22, 5);
+}
+
 // Three stars circling the farmer's hat after Tom bounced on it.
 function drawDizzyStars(ctx, x, y, time) {
   for (let i = 0; i < 3; i += 1) {

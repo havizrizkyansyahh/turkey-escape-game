@@ -58,6 +58,7 @@ export function createGame({ seed, audio = null, shotMode = false }) {
     shotMode,
     time: 0,
     showHelp: false,
+    showKeys: true, // the controls strip along the bottom of the play screen (H toggles it)
     muted: audio ? audio.isMuted() : false,
     best: shotMode ? emptyBest() : loadBest(),
     summary: null,
@@ -139,6 +140,7 @@ function updatePlaying(game, input, dt) {
     sound(game, 'click');
     return;
   }
+  if (input.helpPressed) game.showKeys = !game.showKeys;
   // a left click in play is a jump (and a second click mid-air is the flutter)
   const controls = input.click ? { ...input, jumpPressed: true, jump: true } : input;
   updateRun(run, controls, dt);
