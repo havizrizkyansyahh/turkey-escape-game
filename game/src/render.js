@@ -64,7 +64,7 @@ function drawTurkeySprite(ctx, run, cameraX, time) {
   const fade = Math.max(0.35, 1 - height / 220);
   groundShadow(ctx, x, GROUND_Y, 26 * fade, 0.26 * fade);
   if (turkey.dashLeft > 0 || turkey.sneakBoostLeft > 0) drawSpeedLines(ctx, x, turkey.y, time);
-  drawTurkey(ctx, x, turkey.y, turkeyLook(turkey, time), time);
+  drawTurkey(ctx, x, turkey.y, { ...turkeyLook(turkey, time), hat: run.hat }, time);
 }
 
 function drawDangerVignette(ctx, level, time) {

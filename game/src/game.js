@@ -7,9 +7,10 @@ import { drawHud, PAUSE_BUTTON } from './ui/hud.js';
 import { drawTitleScreen, drawPauseOverlay, drawEndScreen, titleButtons, pauseButtons, endButtons, buttonAt } from './ui/screens.js';
 import { loadBest, saveBest, emptyBest } from './storage.js';
 import { medalsEarned, mergeMedals } from './medals.js';
+import { bestHat, hatsOwned, nextHat } from './wardrobe.js';
 
 export function createGame({ seed, audio = null, shotMode = false }) {
-  return {
+  const game = {
     screen: 'title',
     seed: seed >>> 0,
     run: null,
@@ -20,10 +21,13 @@ export function createGame({ seed, audio = null, shotMode = false }) {
     showKeys: true, // the controls strip along the bottom of the play screen (H toggles it)
     muted: audio ? audio.isMuted() : false,
     best: shotMode ? emptyBest() : loadBest(),
+    hat: null, // the disguise Tom wears, from the wardrobe
     summary: null,
     heartbeatLeft: 0,
     pointer: { x: -1, y: -1 },
   };
+  game.hat = game.best.hat ?? bestHat(game.best.medals);
+  return game;
 }
 
 function sound(game, name) {
@@ -37,6 +41,7 @@ function nextSeed(game) {
 
 export function startRun(game) {
   game.run = createRun(nextSeed(game));
+  game.run.hat = game.hat;
   game.screen = 'playing';
   game.showHelp = false;
   game.audio?.startMusic(0);
@@ -51,9 +56,15 @@ function finishRun(game) {
   best.meters = Math.max(best.meters, summary.meters);
   if (summary.outcome === 'escaped') best.escapes += 1;
   summary.medals = medalsEarned(summary);
+  const hatsBefore = hatsOwned(best.medals ?? []);
   const { owned, fresh } = mergeMedals(best.medals ?? [], summary.medals);
   best.medals = owned;
   summary.newMedals = fresh;
+  summary.newHats = hatsOwned(owned).filter((hat) => !hatsBefore.includes(hat));
+  if (summary.newHats.length > 0) {
+    game.hat = summary.newHats[summary.newHats.length - 1]; // try the new disguise on at once
+    best.hat = game.hat;
+  }
   game.best = best;
   if (!game.shotMode) saveBest(best);
   game.summary = summary;
@@ -74,6 +85,13 @@ function updateTitle(game, input) {
   }
   if (input.helpPressed || clicked === 'help') {
     game.showHelp = !game.showHelp;
+    sound(game, 'click');
+    return;
+  }
+  if (input.wardrobePressed || clicked === 'wardrobe') {
+    game.hat = nextHat(game.hat, game.best.medals ?? []);
+    game.best = { ...game.best, hat: game.hat };
+    if (!game.shotMode) saveBest(game.best);
     sound(game, 'click');
     return;
   }

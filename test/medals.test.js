@@ -55,7 +55,7 @@ test('the combo resets once the window runs out', () => {
 
 test('an old saved best without medals still loads', () => {
   const best = normalizeBest({ score: 5, meters: 3, escapes: 1 });
-  assert.deepEqual(best, { score: 5, meters: 3, escapes: 1, medals: [] });
+  assert.deepEqual(best, { score: 5, meters: 3, escapes: 1, medals: [], hat: null });
 });
 
 test('unknown medal ids in a saved best are dropped', () => {

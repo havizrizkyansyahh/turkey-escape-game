@@ -22,6 +22,8 @@ function freshRun(game, stageIndex, time) {
   run.stageIndex = stageIndex;
   run.stageBannerLeft = 0;
   run.time = time;
+  run.hat = 'pilgrim'; // the shots show Tom in his first unlocked disguise
+  run.decoys = 2;
   game.run = run;
   game.screen = 'playing';
   return run;
@@ -142,7 +144,8 @@ function sampleSummary(outcome) {
     rank: escaped ? 'Barnyard Legend' : 'Kitchen Fugitive',
     newBest: escaped,
     medals: escaped ? ['greatEscape', 'hatHopper', 'ovenDancer', 'ghost'] : [],
-    newMedals: escaped ? ['hatHopper'] : [],
+    newMedals: escaped ? ['greatEscape'] : [],
+    newHats: escaped ? ['pilgrim'] : [],
   };
 }
 
@@ -151,6 +154,7 @@ const SHOTS = {
     game.screen = 'title';
     game.time = 1.25;
     game.best = { ...SAMPLE_BEST };
+    game.hat = 'pilgrim';
   },
   kitchen: stageKitchenChase,
   hide: stageHaystackHide,
@@ -161,6 +165,7 @@ const SHOTS = {
     game.time = 1.6;
     game.best = { ...SAMPLE_BEST };
     game.summary = sampleSummary('escaped');
+    game.hat = 'pilgrim'; // the disguise this run just unlocked
   },
   caught(game) {
     game.screen = 'ended';

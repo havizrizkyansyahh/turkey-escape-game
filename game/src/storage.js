@@ -2,6 +2,7 @@
 // between visits when the browser allows it.
 
 import { isMedalId } from './medals.js';
+import { isHatId } from './wardrobe.js';
 
 export function loadBest() {
   try {
@@ -19,15 +20,16 @@ export function saveBest(best) {
   }
 }
 
-// Reads a saved record, including ones from before medals existed.
+// Reads a saved record, including ones from before medals and hats existed.
 export function normalizeBest(saved) {
   if (!saved || !Number.isFinite(saved.score)) return emptyBest();
   const medals = Array.isArray(saved.medals) ? saved.medals.filter(isMedalId) : [];
-  return { score: saved.score, meters: saved.meters || 0, escapes: saved.escapes || 0, medals };
+  const hat = isHatId(saved.hat) ? saved.hat : null;
+  return { score: saved.score, meters: saved.meters || 0, escapes: saved.escapes || 0, medals, hat };
 }
 
 export function emptyBest() {
-  return { score: 0, meters: 0, escapes: 0, medals: [] };
+  return { score: 0, meters: 0, escapes: 0, medals: [], hat: null };
 }
 
 const BEST_KEY = 'not-on-the-menu.best.v1';

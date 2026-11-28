@@ -11,12 +11,14 @@ import { drawProps } from '../art/props-art.js';
 import { drawSpeechBubble, drawSightCone, drawLantern } from '../art/effects-art.js';
 import { STAGE_COLORS } from './hud.js';
 import { MEDALS } from '../medals.js';
+import { hatName } from '../wardrobe.js';
 
 export function titleButtons(game) {
   return [
     { id: 'start', label: 'START RUN', x: 360, y: 262, w: 240, h: 58, primary: true },
     { id: 'help', label: game.showHelp ? 'CLOSE HELP' : 'HOW TO PLAY', x: 332, y: 334, w: 144, h: 42 },
     { id: 'sound', label: game.muted ? 'SOUND: OFF' : 'SOUND: ON', x: 484, y: 334, w: 144, h: 42 },
+    { id: 'wardrobe', label: `DISGUISE: ${hatName(game.hat).toUpperCase()}  [T]`, x: 316, y: 430, w: 328, h: 34 },
   ];
 }
 
@@ -127,7 +129,7 @@ export function drawTitleScreen(ctx, game) {
   const time = game.time;
   drawSceneBackdrop(ctx, 'farmyard', 420, time);
   drawWrongHaystackSearch(ctx, time);
-  drawSneakingTom(ctx, 176, time);
+  drawSneakingTom(ctx, 176, time, game.hat);
   drawLogo(ctx, 480, 112, time);
   drawRibbon(ctx, 480, 214, "TOM WATTLE'S GREAT THANKSGIVING ESCAPE");
   drawButtons(ctx, titleButtons(game), game.pointer);
@@ -149,11 +151,11 @@ function drawWrongHaystackSearch(ctx, time) {
 }
 
 // ...while Tom tiptoes off the other way.
-function drawSneakingTom(ctx, x, time) {
+function drawSneakingTom(ctx, x, time, hat) {
   ctx.save();
   ctx.translate(x, 0);
   ctx.scale(-1, 1);
-  drawTurkey(ctx, 0, GROUND_Y, { pose: 'run', phase: time * 6, flap: time * 4, scale: 1.45, blink: time % 3 < 0.1 }, time);
+  drawTurkey(ctx, 0, GROUND_Y, { pose: 'run', phase: time * 6, flap: time * 4, scale: 1.45, blink: time % 3 < 0.1, hat }, time);
   ctx.restore();
   drawSpeechBubble(ctx, 'Shh...!', x + 10, GROUND_Y - 150);
 }
@@ -213,7 +215,7 @@ function drawFireflies(ctx, time) {
   }
 }
 
-function drawEscapedScene(ctx, time) {
+function drawEscapedScene(ctx, time, hat) {
   drawSceneBackdrop(ctx, 'woods', 120 + time * 8, time);
   drawFarmer(ctx, 86, GROUND_Y - 40, { arms: 'fist', moving: false, stride: 0, facing: 1, lean: 0, mouth: 'shout', brows: 'angry', scale: 0.42 }, time);
   ellipsePath(ctx, 270, GROUND_Y + 4, 92, 18);
@@ -226,7 +228,7 @@ function drawEscapedScene(ctx, time) {
   ctx.lineWidth = 2;
   ellipsePath(ctx, 270, GROUND_Y - 58, 48, 9);
   ctx.stroke();
-  drawTurkey(ctx, 270, GROUND_Y - 62, { pose: 'proud', phase: 0, flap: time * 6, scale: 2.3, blink: time % 3.1 < 0.12 }, time);
+  drawTurkey(ctx, 270, GROUND_Y - 62, { pose: 'proud', phase: 0, flap: time * 6, scale: 2.3, blink: time % 3.1 < 0.12, hat }, time);
   drawFireflies(ctx, time);
   ctx.fillStyle = P.amber;
   for (let i = 0; i < 9; i += 1) {
@@ -305,6 +307,10 @@ function drawMedalRow(ctx, summary) {
   const top = 494;
   panel(ctx, left, top, 516, 96, { radius: 16, fill: 'rgba(43, 26, 18, 0.9)' });
   plainText(ctx, `MEDALS THIS RUN: ${earned.size} OF ${MEDALS.length}`, left + 16, top + 16, { size: 13, color: P.uiGold, weight: '800' });
+  const newHats = summary.newHats ?? [];
+  if (newHats.length > 0) {
+    plainText(ctx, `NEW DISGUISE: ${hatName(newHats[newHats.length - 1]).toUpperCase()}!`, left + 500, top + 16, { size: 13, align: 'right', color: '#ff8f7a', weight: '900' });
+  }
   MEDALS.forEach((medal, index) => {
     const x = left + 48 + index * 84;
     const y = top + 48;
@@ -340,7 +346,7 @@ function drawMedal(ctx, x, y, won) {
 export function drawEndScreen(ctx, game) {
   const summary = game.summary;
   const escaped = summary.outcome === 'escaped';
-  if (escaped) drawEscapedScene(ctx, game.time);
+  if (escaped) drawEscapedScene(ctx, game.time, game.hat);
   else drawCaughtScene(ctx, game.time);
   const pop = Math.min(1, game.time / 0.3);
   ctx.save();

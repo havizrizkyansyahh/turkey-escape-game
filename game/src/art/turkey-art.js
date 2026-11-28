@@ -27,7 +27,65 @@ export function drawTurkey(ctx, x, y, look, time = 0) {
   drawLeg(ctx, layout, look, false);
   drawWing(ctx, layout, look);
   drawHead(ctx, layout, look);
+  if (look.hat) drawHat(ctx, layout, look.hat);
   if (pose === 'dazed') drawDazedStars(ctx, layout, time);
+  ctx.restore();
+}
+
+// A disguise from the wardrobe, drawn in Tom's head space: a pilgrim hat, Groucho glasses with a
+// bushy brow and moustache, or a chef's toque.
+function drawHat(ctx, layout, hat) {
+  const hx = layout.headX;
+  const hy = layout.headY;
+  ctx.save();
+  if (hat === 'pilgrim') {
+    ctx.translate(hx - 2, hy - 8);
+    ctx.rotate(-0.2);
+    ctx.scale(1.3, 1.3);
+    ctx.beginPath();
+    ctx.moveTo(-10, 0);
+    ctx.lineTo(-8, -21);
+    ctx.lineTo(8, -21);
+    ctx.lineTo(10, 0);
+    ctx.closePath();
+    fillAndOutline(ctx, '#2b2320', 2.2);
+    ctx.fillStyle = '#6b4a2b';
+    ctx.fillRect(-9.4, -7, 18.8, 5);
+    ctx.strokeStyle = '#f2c14e';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(-3.5, -8, 7, 7);
+    ellipsePath(ctx, 0, 0, 17, 4.6);
+    fillAndOutline(ctx, '#2b2320', 2.2);
+  } else if (hat === 'chef') {
+    ctx.translate(hx - 1, hy - 9);
+    ctx.rotate(-0.14);
+    for (const [x, y, r] of [[-7, -13, 7], [7, -13, 7], [0, -18, 8.5]]) {
+      ellipsePath(ctx, x, y, r, r);
+      fillAndOutline(ctx, '#fffdf7', 2);
+    }
+    ctx.fillStyle = '#fffdf7';
+    ctx.fillRect(-9, -9, 18, 8);
+    ctx.strokeStyle = INK;
+    ctx.lineWidth = 2;
+    ctx.strokeRect(-9, -9, 18, 8);
+  } else if (hat === 'groucho') {
+    ctx.translate(hx + 1, hy - 3);
+    ctx.strokeStyle = INK;
+    ctx.lineWidth = 3;
+    ellipsePath(ctx, 0, 0, 7, 7);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(-7, -0.5);
+    ctx.lineTo(-15, -2);
+    ctx.stroke();
+    ctx.fillStyle = INK;
+    ctx.beginPath();
+    ctx.ellipse(1, -11, 8.5, 3.4, -0.08, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(14, 9, 8, 3.4, 0.12, 0, Math.PI * 2);
+    ctx.fill();
+  }
   ctx.restore();
 }
 
