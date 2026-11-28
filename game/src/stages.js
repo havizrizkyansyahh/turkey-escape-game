@@ -15,6 +15,7 @@ export const STAGES = [
     spacingSeconds: [1.0, 1.55],
     hideKind: 'haystack',
     throwEvery: null,
+    ambushEvery: null, // seconds of chasing between the farmer's cornering ambushes
     searchLook: [1.3, 1.1], // seconds looking at the hiding spot, then looking away
     searchLooks: [2, 3],
     patterns: { bales: 4, fence: 3, mud: 2, pumpkins: 3, chickens: 2, cornLine: 2, haystack: 2 },
@@ -31,6 +32,7 @@ export const STAGES = [
     spacingSeconds: [0.9, 1.4],
     hideKind: 'barrel',
     throwEvery: [7, 10],
+    ambushEvery: [20, 28],
     searchLook: [1.2, 1.0],
     searchLooks: [2, 3],
     patterns: { bales: 3, baleStack: 2, beam: 3, pitchforks: 3, lantern: 2, barrel: 2, cornLine: 1 },
@@ -47,6 +49,7 @@ export const STAGES = [
     spacingSeconds: [0.85, 1.3],
     hideKind: 'pantry',
     throwEvery: [4.5, 7.2],
+    ambushEvery: [16, 24],
     searchLook: [1.1, 0.9],
     searchLooks: [2, 3],
     patterns: { oven: 5, pot: 3, rollingPin: 3, table: 3, pantry: 2, cornLine: 1 },
@@ -63,6 +66,7 @@ export const STAGES = [
     spacingSeconds: [0.85, 1.25],
     hideKind: null,
     throwEvery: [3.4, 5.2],
+    ambushEvery: [13, 18],
     searchLook: [1.0, 0.8],
     searchLooks: [2, 2],
     patterns: { pumpkins: 3, rollingPin: 2, rockingChair: 3, bales: 1, cornLine: 1 },

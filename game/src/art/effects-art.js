@@ -110,10 +110,27 @@ export function drawSpeechBubble(ctx, text, x, y, alpha = 1) {
   ctx.restore();
 }
 
+// Three stars circling the farmer's hat after Tom bounced on it.
+function drawDizzyStars(ctx, x, y, time) {
+  for (let i = 0; i < 3; i += 1) {
+    const angle = time * 6 + (i * Math.PI * 2) / 3;
+    ctx.save();
+    ctx.translate(x + Math.cos(angle) * 30, y + Math.sin(angle) * 9);
+    ctx.rotate(angle);
+    star(ctx, 0, 0, 9, 4, 5);
+    fillAndOutline(ctx, '#ffe066', 2);
+    ctx.restore();
+  }
+}
+
 export function drawFarmerAlert(ctx, farmer, screenX, time) {
   let symbol = null;
   let color = P.uiRed;
-  if (farmer.state === 'windup' || farmer.state === 'aim' || farmer.state === 'pokeWindup') symbol = '!';
+  if (farmer.state === 'stunned') {
+    drawDizzyStars(ctx, screenX, GROUND_Y - 214, time);
+    return;
+  }
+  if (['windup', 'aim', 'pokeWindup', 'cornering', 'swipe'].includes(farmer.state)) symbol = '!';
   else if (farmer.state === 'search' && farmer.lookingAtSpot) {
     symbol = '?';
     color = P.uiGold;

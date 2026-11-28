@@ -68,6 +68,20 @@ export const FARMER_TUNING = {
   throwMaxGap: 900,
 };
 
+export const AMBUSH_TUNING = {
+  leadIn: 900, // when Tom is this far before the clearing, the farmer takes his shortcut
+  clearing: 760, // the obstacle-free stretch of floor the ambush happens on
+  popInset: 380, // where in the clearing the farmer pops out
+  cancelWithin: 300, // too late to start once Tom is this close to the clearing
+  shortcutMaxSeconds: 2.6,
+  swipeReach: 118, // he swipes when Tom is this close
+  swipeSeconds: 0.3,
+  stunSeconds: 1.6, // after a hat hop or a gobble-dash into him
+  tumbleSeconds: 1.1, // after Tom slips past
+  hatHopBounce: 640,
+  walkBackSpeed: 220, // toward a Tom with no feathers left
+};
+
 export const SCORE_VALUES = {
   perMeter: 1,
   corn: 10,

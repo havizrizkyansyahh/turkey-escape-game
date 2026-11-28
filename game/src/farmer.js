@@ -6,6 +6,7 @@ import { GROUND_Y, FARMER_TUNING as F } from './config.js';
 import { boxesOverlap } from './collisions.js';
 import { clamp } from './numbers.js';
 import { turkeyBox } from './turkey.js';
+import { isAmbushState, updateAmbushFarmer } from './ambush.js';
 
 const GRAB_LINES = ['GOTCHA!', "C'mere, drumstick!", 'Dinner time!', 'Hold STILL!'];
 const CHASE_LINES = ['Get back here!', "You're the main course!", 'Grandma wants you basted!', 'Nobody skips Thanksgiving!'];
@@ -107,8 +108,11 @@ function approachSpot(farmer, run, stage, speed, dt) {
     return;
   }
   const standX = spot.x + spot.w / 2 - F.searchOffset;
-  farmer.vx = speed;
-  if (farmer.x + farmer.vx * dt >= standX) {
+  const direction = farmer.x <= standX ? 1 : -1; // from behind, or walking back from an ambush
+  farmer.facing = direction;
+  farmer.vx = speed * direction;
+  const next = farmer.x + farmer.vx * dt;
+  if (direction > 0 ? next >= standX : next <= standX) {
     farmer.x = standX;
     farmer.vx = 0;
     farmer.looksLeft = random.int(stage.searchLooks[0], stage.searchLooks[1]);
@@ -218,7 +222,8 @@ export function updateFarmer(farmer, run, stage, dt) {
       farmer.facing = 1;
       break;
     default:
-      enter(farmer, 'chase');
+      if (isAmbushState(farmer.state)) updateAmbushFarmer(farmer, run, stage, dt);
+      else enter(farmer, 'chase');
   }
 
   // He may close in, but never runs through Tom while chasing.

@@ -11,6 +11,7 @@ import { boxesOverlap, growBox } from './collisions.js';
 import { clamp } from './numbers.js';
 import { createTurkey, updateTurkey, turkeyBox, stumbleTurkey, hurtTurkey } from './turkey.js';
 import { createFarmer, updateFarmer, startleFarmer, spotTurkey, farmerGivesUp, farmerCelebrates } from './farmer.js';
+import { createAmbush, updateAmbush } from './ambush.js';
 import { spawnBurst, spawnPopup, updateEffects } from './particles.js';
 import { createCamera, followTurkey, shakeCamera } from './camera.js';
 
@@ -69,7 +70,8 @@ export function createRun(seed) {
     stageBannerLeft: 3.2,
     score: 0,
     farthestX: turkey.x,
-    stats: { corn: 0, sneaks: 0, hides: 0, closeCalls: 0, hits: 0, dashes: 0, smashes: 0 },
+    stats: { corn: 0, sneaks: 0, hides: 0, closeCalls: 0, hits: 0, dashes: 0, smashes: 0, hatHops: 0 },
+    ambush: createAmbush(),
     hintsShown: new Set(),
     outcome: null,
     outcomeReason: null,
@@ -80,6 +82,8 @@ export function createRun(seed) {
   run.knifeLaneClear = (gap) => knifeLaneClear(run, gap);
   run.onTurkeyCaught = (reason) => catchTurkey(run, reason);
   run.onSpotPoked = (spot) => pokeHidingSpot(run, spot);
+  run.onTurkeyGrabbed = () => grabTurkey(run);
+  run.award = (points, label, x, y, color, size) => addScore(run, points, label, x, y, color, size);
   extendCourse(run.course, run.camera.x + VIEW_WIDTH + 900);
   return run;
 }
@@ -102,9 +106,13 @@ export function farmerGap(run) {
   return run.turkey.x - run.farmer.x;
 }
 
-// 0 when the farmer is comfortably far, 1 when he is about to grab.
+// 0 when the farmer is comfortably far, 1 when he is about to grab (from behind, or blocking the
+// lane ahead in an ambush).
 export function dangerLevel(run) {
   if (run.outcome || run.turkey.hiddenIn) return 0;
+  const state = run.farmer.state;
+  if (state === 'cornering' || state === 'swipe') return clamp((520 - (run.farmer.x - run.turkey.x)) / 360, 0, 1);
+  if (state === 'shortcut' || state === 'stunned' || state === 'tumble') return 0;
   return clamp((420 - farmerGap(run)) / 270, 0, 1);
 }
 
@@ -417,6 +425,22 @@ function throwKnife(run, x, high) {
   }
 }
 
+// The farmer's ambush swipe connected: Tom wriggles free but leaves a tail feather in his fist.
+function grabTurkey(run) {
+  const turkey = run.turkey;
+  run.stats.hits += 1;
+  const knockedOut = hurtTurkey(turkey);
+  shakeCamera(run.camera, 11);
+  spawnPopup(run.popups, { text: 'GRABBED!', x: turkey.x, y: turkey.y - 104, color: '#ff6b5a', size: 26 });
+  spawnPopup(run.popups, { text: '-1 FEATHER', x: turkey.x, y: turkey.y - 76, color: '#ffb3a6', size: 18 });
+  featherPuff(run, 16);
+  run.events.push({ type: 'hurt', cause: 'farmer' });
+  if (knockedOut) {
+    spawnPopup(run.popups, { text: 'OUT OF FEATHERS!', x: turkey.x, y: turkey.y - 140, color: '#ff6b5a', size: 24, life: 1.6 });
+    run.events.push({ type: 'knockedOut' });
+  }
+}
+
 function catchTurkey(run, reason) {
   if (run.outcome) return;
   const turkey = run.turkey;
@@ -507,6 +531,7 @@ export function updateRun(run, controls, dt) {
   if (!run.outcome) handleHiding(run, controls, stage);
   updateTurkey(turkey, controls, stage, dt, run.events);
   for (const event of run.events) if (event.type === 'dash') run.stats.dashes += 1;
+  updateAmbush(run, dt);
   updateFarmer(run.farmer, run, stage, dt);
   for (const entity of run.course.entities) updateEntity(entity, dt, run);
   if (!run.outcome && !turkey.hiddenIn) resolveContacts(run);

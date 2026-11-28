@@ -239,6 +239,18 @@ export function extendCourse(course, untilX) {
   }
 }
 
+// Holds back the next `length` px of floor for a set piece (the farmer's ambush): nothing is
+// placed there. Refused when the stretch would reach a stage door or the finish, or sit on a gate.
+export function reserveClearing(course, length) {
+  const startX = course.nextX + 60;
+  const stageIndex = stageIndexAt(startX);
+  const nextDoorX = stageIndex + 1 < STAGES.length ? stageStartX(stageIndex + 1) : ROUTE_END_X;
+  if (!Number.isFinite(startX) || startX + length > nextDoorX - 240) return null;
+  if (startX < stageStartX(stageIndex) + GATE_CLEARANCE) return null;
+  course.nextX = startX + length + 60;
+  return startX;
+}
+
 export function pruneCourse(course, beforeX) {
   let keep = 0;
   for (const entity of course.entities) {

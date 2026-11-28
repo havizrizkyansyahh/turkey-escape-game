@@ -79,13 +79,27 @@ function goodBot(run: any, memory: { holdJump: number; hid: number }): Controls 
     if (!searching || (f.state === 'search' && !f.lookingAtSpot)) c.hidePressed = true;
     return c;
   }
+  // Cornered: read his arms. Up means a high swipe (duck under), low means a scoop (jump it).
+  if (f.state === 'cornering' || f.state === 'swipe') {
+    const ahead = f.x - t.x;
+    if (ahead > -60 && ahead < 240) {
+      if (f.ambushHigh) c.duck = t.onGround;
+      else if (t.onGround && ahead > 90 && ahead < 175) {
+        c.jumpPressed = true;
+        c.jump = true;
+        memory.holdJump = 0.3;
+      }
+      return c;
+    }
+  }
   const gap = farmerGap(run);
-  if (gap < 300 && t.onGround && hidingSpotUnderTurkey(run) && memory.hid < 4) {
+  const chasing = gap > 0 && !['shortcut', 'cornering', 'swipe', 'stunned', 'tumble'].includes(f.state);
+  if (chasing && gap < 300 && t.onGround && hidingSpotUnderTurkey(run) && memory.hid < 4) {
     memory.hid += 1;
     c.hidePressed = true;
     return c;
   }
-  if (gap < 175 && t.meter >= 34) c.dashPressed = true;
+  if (chasing && gap < 175 && t.meter >= 34) c.dashPressed = true;
 
   for (const e of run.course.entities) {
     if (e.gone) continue;
@@ -157,7 +171,7 @@ for (let seed = firstSeed; seed < firstSeed + runs; seed += 1) {
       maxEntities = Math.max(maxEntities, run.course.entities.length);
       for (const event of run.events) {
         if (event.type === 'hurt') hurtCauses[event.cause] = (hurtCauses[event.cause] ?? 0) + 1;
-        if (['stumble', 'bonk', 'bawk', 'mud', 'spotted', 'farmerWindup', 'farmerMissed'].includes(event.type)) {
+        if (['stumble', 'bonk', 'bawk', 'mud', 'spotted', 'farmerWindup', 'farmerMissed', 'cornered', 'slippedPast', 'hatHop', 'bowledOver'].includes(event.type)) {
           const key = event.kind ? `${event.type}:${event.kind}` : event.type;
           setbacks[key] = (setbacks[key] ?? 0) + 1;
           if (process.env.TRACE === String(seed) && event.type === 'stumble') {
